@@ -2,9 +2,14 @@ package payoneer
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"time"
+
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/pablocrivella/go-payoneer/internal/auth"
 	"github.com/pablocrivella/go-payoneer/internal/transport"
@@ -49,6 +54,35 @@ func WithLogger(logger *slog.Logger) Option {
 	}
 }
 
+// WithRetries sets the maximum number of retries for failed requests.
+func WithRetries(max int) Option {
+	return func(c *Client) {
+		c.retryMax = max
+	}
+}
+
+// WithRetryWait sets the minimum and maximum wait time between retries.
+func WithRetryWait(min, max time.Duration) Option {
+	return func(c *Client) {
+		c.retryWaitMin = min
+		c.retryWaitMax = max
+	}
+}
+
+// WithTracerProvider sets the OpenTelemetry tracer provider for the Client.
+func WithTracerProvider(tp trace.TracerProvider) Option {
+	return func(c *Client) {
+		c.tracerProvider = tp
+	}
+}
+
+// WithMeterProvider sets the OpenTelemetry meter provider for the Client.
+func WithMeterProvider(mp metric.MeterProvider) Option {
+	return func(c *Client) {
+		c.meterProvider = mp
+	}
+}
+
 // WithClientCredentials configures the client to use OAuth 2.0 Client Credentials flow.
 func WithClientCredentials(clientID, clientSecret string) Option {
 	return func(c *Client) {
@@ -71,5 +105,47 @@ func WithAuthCode(clientID, clientSecret, code, redirectURL string) Option {
 func WithTokenStore(store auth.TokenStore) Option {
 	return func(c *Client) {
 		c.tokenStore = store
+	}
+}
+
+// WithProgramID sets the Program ID for the Client.
+func WithProgramID(id string) Option {
+	return func(c *Client) {
+		c.ProgramID = id
+	}
+}
+
+// WithPage sets the page number for pagination.
+func WithPage(page int) TransactionListOption {
+	return func(v *url.Values) {
+		v.Set("page", fmt.Sprintf("%d", page))
+	}
+}
+
+// WithPageSize sets the number of items per page.
+func WithPageSize(size int) TransactionListOption {
+	return func(v *url.Values) {
+		v.Set("page_size", fmt.Sprintf("%d", size))
+	}
+}
+
+// WithFrom sets the start date for filtering transactions.
+func WithFrom(from time.Time) TransactionListOption {
+	return func(v *url.Values) {
+		v.Set("from", from.Format(time.RFC3339))
+	}
+}
+
+// WithTo sets the end date for filtering transactions.
+func WithTo(to time.Time) TransactionListOption {
+	return func(v *url.Values) {
+		v.Set("to", to.Format(time.RFC3339))
+	}
+}
+
+// WithStatus sets the status for filtering transactions.
+func WithStatus(status string) TransactionListOption {
+	return func(v *url.Values) {
+		v.Set("status", status)
 	}
 }
