@@ -12,6 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/pablocrivella/go-payoneer/internal/auth"
 	"github.com/pablocrivella/go-payoneer/internal/transport"
 )
@@ -32,10 +37,94 @@ type Client struct {
 	tokenStore auth.TokenStore
 	authFn     func(ctx context.Context, c *Client) (*http.Client, error)
 
+	// Retry configuration
+	retryMax     int
+	retryWaitMin time.Duration
+	retryWaitMax time.Duration
+
+	// OpenTelemetry
+	tracerProvider trace.TracerProvider
+	meterProvider  metric.MeterProvider
+	tracer         trace.Tracer
+
+	// Program configuration
+	ProgramID string
+
 	// Services
 	common   service
 	Accounts *AccountsService
 	Payouts  *PayoutsService
+}
+
+// retryableLogger is a wrapper around slog.Logger that implements retryablehttp.LeveledLogger.
+type retryableLogger struct {
+	l *slog.Logger
+}
+
+func (r *retryableLogger) Error(msg string, keysAndValues ...interface{}) {
+	r.l.Error(msg, keysAndValues...)
+}
+func (r *retryableLogger) Info(msg string, keysAndValues ...interface{}) {
+	r.l.Info(msg, keysAndValues...)
+}
+func (r *retryableLogger) Debug(msg string, keysAndValues ...interface{}) {
+	r.l.Debug(msg, keysAndValues...)
+}
+func (r *retryableLogger) Warn(msg string, keysAndValues ...interface{}) {
+	r.l.Warn(msg, keysAndValues...)
+}
+
+func (c *Client) wrapTransport(httpClient *http.Client) *http.Client {
+	// 1. Base Transport (already in httpClient.Transport or DefaultTransport)
+	next := httpClient.Transport
+	if next == nil {
+		next = http.DefaultTransport
+	}
+
+	// 2. OpenTelemetry Instrumentation
+	if c.tracerProvider != nil || c.meterProvider != nil {
+		opts := []otelhttp.Option{}
+		if c.tracerProvider != nil {
+			opts = append(opts, otelhttp.WithTracerProvider(c.tracerProvider))
+		}
+		if c.meterProvider != nil {
+			opts = append(opts, otelhttp.WithMeterProvider(c.meterProvider))
+		}
+		next = otelhttp.NewTransport(next, opts...)
+	}
+
+	// 3. Retry Logic
+	if c.retryMax > 0 {
+		retryClient := retryablehttp.NewClient()
+		retryClient.RetryMax = c.retryMax
+		if c.retryWaitMin > 0 {
+			retryClient.RetryWaitMin = c.retryWaitMin
+		}
+		if c.retryWaitMax > 0 {
+			retryClient.RetryWaitMax = c.retryWaitMax
+		}
+		if c.Logger != nil {
+			retryClient.Logger = &retryableLogger{l: c.Logger}
+		}
+
+		retryClient.HTTPClient.Transport = next
+		retryClient.HTTPClient.Timeout = httpClient.Timeout
+
+		httpClient = retryClient.StandardClient()
+		next = httpClient.Transport
+	}
+
+	// 4. Logging Transport
+	if c.Logger != nil {
+		httpClient.Transport = &transport.LoggingTransport{
+			Next:   next,
+			Logger: c.Logger,
+		}
+	} else {
+		httpClient.Transport = next
+	}
+
+	return httpClient
 }
 
 // NewClient returns a new Payoneer Client with the provided options.
@@ -53,17 +142,11 @@ func NewClient(opts ...Option) *Client {
 		opt(c)
 	}
 
-	// Wrap the HTTP client's transport with logging if a logger is provided.
-	if c.Logger != nil {
-		next := c.HTTPClient.Transport
-		if next == nil {
-			next = http.DefaultTransport
-		}
-		c.HTTPClient.Transport = &transport.LoggingTransport{
-			Next:   next,
-			Logger: c.Logger,
-		}
+	if c.tracerProvider != nil {
+		c.tracer = c.tracerProvider.Tracer("go-payoneer")
 	}
+
+	c.HTTPClient = c.wrapTransport(c.HTTPClient)
 
 	c.common.client = c
 	c.Accounts = (*AccountsService)(&c.common)
@@ -84,20 +167,10 @@ func (c *Client) Authenticate(ctx context.Context) error {
 		return fmt.Errorf("authentication failed: %w", err)
 	}
 
-	// Preserve timeout and wrap the new client's transport with logging.
+	// Preserve timeout and wrap the new client's transport.
 	httpClient.Timeout = c.HTTPClient.Timeout
-	if c.Logger != nil {
-		next := httpClient.Transport
-		if next == nil {
-			next = http.DefaultTransport
-		}
-		httpClient.Transport = &transport.LoggingTransport{
-			Next:   next,
-			Logger: c.Logger,
-		}
-	}
+	c.HTTPClient = c.wrapTransport(httpClient)
 
-	c.HTTPClient = httpClient
 	return nil
 }
 
