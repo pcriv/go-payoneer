@@ -38,8 +38,12 @@ func TestNewClient(t *testing.T) {
 	t.Run("Custom Logger", func(t *testing.T) {
 		logger := slog.Default()
 		client := payoneer.NewClient(payoneer.WithLogger(logger))
-		if client.Logger != logger {
-			t.Error("expected logger to be custom logger")
+		if client.Logger == nil {
+			t.Fatal("expected logger to be non-nil")
+		}
+		// The logger should be wrapped in a RedactionHandler
+		if client.Logger == logger {
+			t.Error("expected logger to be wrapped with RedactionHandler, not the original")
 		}
 	})
 

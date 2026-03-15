@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pablocrivella/go-payoneer/internal/auth"
+	"github.com/pablocrivella/go-payoneer/internal/transport"
 )
 
 // Option is a functional option for configuring the Client.
@@ -36,10 +37,15 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-// WithLogger sets the logger for the Client.
+// WithLogger sets the logger for the Client and wraps it with a RedactionHandler.
 func WithLogger(logger *slog.Logger) Option {
 	return func(c *Client) {
-		c.Logger = logger
+		redactor := transport.NewRedactionHandler(
+			logger.Handler(),
+			[]string{"Authorization"},
+			[]string{"client_secret", "access_token", "refresh_token", "client_id"},
+		)
+		c.Logger = slog.New(redactor)
 	}
 }
 
