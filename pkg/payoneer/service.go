@@ -1,0 +1,12 @@
+package payoneer
+
+// service is the base struct for all Payoneer API resource services.
+type service struct {
+	client *Client
+}
+
+// AccountsService handles operations related to Payoneer accounts.
+type AccountsService service
+
+// PayoutsService handles operations related to Payoneer payouts.
+type PayoutsService service
