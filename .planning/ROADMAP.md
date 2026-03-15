@@ -19,7 +19,11 @@
 3. Tokens are automatically refreshed when expired without user intervention.
 4. All outgoing requests include proper logging (with sensitive data redacted).
 5. Non-2xx responses are parsed into custom `APIError` types.
-**Plans**: TBD
+
+**Plans:** 3 plans
+- [ ] 01-01-PLAN.md — SDK Foundation & Client Initialization
+- [ ] 01-02-PLAN.md — OAuth 2.0 & Token Management
+- [ ] 01-03-PLAN.md — Error Handling & Observability Middleware
 
 ### Phase 2: Observability, Robustness & Account Services
 **Goal**: Implement reliable account data retrieval with full telemetry.
@@ -56,7 +60,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Client Foundation & Authentication | 0/1 | Not started | - |
+| 1. Client Foundation & Authentication | 0/3 | Not started | - |
 | 2. Observability, Robustness & Account Services | 0/1 | Not started | - |
 | 3. Financial Operations (Payouts) | 0/1 | Not started | - |
 | 4. Webhooks & Payee Management | 0/1 | Not started | - |
