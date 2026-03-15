@@ -4,15 +4,15 @@
 
 **Core Value:** Provide a high-quality, type-safe, and observable Go SDK for Payoneer that minimizes boilerplate and maximizes reliability.
 
-**Current Focus:** Roadmap Initialization
+**Current Focus:** Phase 1: Client Foundation & Authentication
 
 ## Current Position
 
 | Milestone | Phase | Plan | Status | Progress |
 |-----------|-------|------|--------|----------|
-| 1. Foundation | Phase 1 | Initializing | Not started | [░░░░░░░░░░░░░░░░░░░░] 0% |
+| 1. Foundation | Phase 1 | Ready to plan | Ready to plan | [░░░░░░░░░░░░░░░░░░░░] 0% |
 
-**Latest Update:** Initial roadmap created based on requirements and research. Ready for Phase 1 planning.
+**Latest Update:** Phase 1 context gathered and implementation decisions finalized. Ready for planning.
 
 ## Performance Metrics
 
@@ -30,6 +30,9 @@
 - Standard Observability: OpenTelemetry for tracing and metrics.
 - Dependency: Use `golang.org/x/oauth2` for robust token management.
 - Dependency: Use `go-retryablehttp` for automatic retries.
+- Client Design: Service-oriented pre-initialized services on a concrete Client struct.
+- Auth: Functional options for credentials, interface-based token storage.
+- Error Handling: Custom APIError with code mapping and business validation in transport.
 
 ### Todos
 - [ ] Initialize repository structure.
@@ -39,8 +42,9 @@
 - None currently identified.
 
 ## Session Continuity
-- Last step: Completed roadmap and state initialization.
+- Last step: Phase 1 context gathered.
 - Next step: Plan Phase 1 (Foundation & Auth).
+- Resume file: .planning/phases/01-client-foundation-authentication/01-CONTEXT.md
 
 ---
 *Last updated: 2026-03-15*
