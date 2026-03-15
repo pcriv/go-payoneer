@@ -18,6 +18,7 @@
 | `pkg/payoneer/client.go` | Client struct has `ProgramID` field. | [ ] |
 | `pkg/payoneer/options.go` | `WithProgramID` option exists. | [ ] |
 | `pkg/payoneer/payout_types.go` | Defines `MassPayoutRequest` and `PayoutItem`. | [ ] |
+| `pkg/payoneer/payout_types_test.go` | Tests for payout models and validation. | [ ] |
 | `pkg/payoneer/payouts.go` | `PayoutsService` implementation. | [ ] |
 | `pkg/payoneer/payouts_test.go` | Comprehensive test suite for Payout operations. | [ ] |
 
