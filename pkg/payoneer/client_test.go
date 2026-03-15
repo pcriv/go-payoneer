@@ -42,4 +42,14 @@ func TestNewClient(t *testing.T) {
 			t.Error("expected logger to be custom logger")
 		}
 	})
+
+	t.Run("Service initialization", func(t *testing.T) {
+		client := payoneer.NewClient()
+		if client.Accounts == nil {
+			t.Error("expected Accounts service to be initialized")
+		}
+		if client.Payouts == nil {
+			t.Error("expected Payouts service to be initialized")
+		}
+	})
 }
