@@ -34,7 +34,10 @@
 2. Outgoing requests and incoming responses generate OpenTelemetry traces and metrics.
 3. User can retrieve account balances for multiple currencies.
 4. User can list, filter, and paginate transaction history.
-**Plans**: TBD
+
+**Plans:** 0/2 plans executed
+- [ ] 02-01-PLAN.md — SDK Robustness & Observability
+- [ ] 02-02-PLAN.md — Account Services Implementation
 
 ### Phase 3: Financial Operations (Payouts)
 **Goal**: Enable core payout capabilities with business validation.
@@ -61,10 +64,10 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Client Foundation & Authentication | 3/3 | Complete | 2026-03-15 |
-| 2. Observability, Robustness & Account Services | 0/1 | Not started | - |
+| 2. Observability, Robustness & Account Services | 0/2 | Not started | - |
 | 3. Financial Operations (Payouts) | 0/1 | Not started | - |
 | 4. Webhooks & Payee Management | 0/1 | Not started | - |
 
 ---
 *Roadmap generated: 2026-03-15*
-*Last updated: 2026-03-15 after Phase 1 completion*
+*Last updated: 2026-03-15 after Phase 2 planning*
