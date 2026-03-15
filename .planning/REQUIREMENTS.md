@@ -12,14 +12,14 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **AUTH-01**: Support OAuth 2.0 Client Credentials flow for application-level access
 - [ ] **AUTH-02**: Support OAuth 2.0 Authorization Code flow for user-level access
 - [ ] **AUTH-03**: Automatic token refreshing using `golang.org/x/oauth2` or similar thread-safe mechanism
-- [ ] **CLNT-01**: Functional options pattern for client configuration (BaseURL, Timeout, UserAgent, etc.)
-- [ ] **CLNT-02**: Support for Sandbox and Production environments
-- [ ] **CLNT-03**: Context-first API design (all methods accept `context.Context`)
+- [x] **CLNT-01**: Functional options pattern for client configuration (BaseURL, Timeout, UserAgent, etc.)
+- [x] **CLNT-02**: Support for Sandbox and Production environments
+- [x] **CLNT-03**: Context-first API design (all methods accept `context.Context`)
 - [ ] **ERR-01**: Custom `APIError` type that captures Payoneer-specific error codes and messages from response bodies (even on 200 OK)
 
 ### Observability & Robustness (Phase 1/2)
 
-- [ ] **OBS-01**: Integrated structured logging using `log/slog` with support for custom loggers
+- [x] **OBS-01**: Integrated structured logging using `log/slog` with support for custom loggers
 - [ ] **OBS-02**: Redaction of sensitive information (tokens, secrets) in logs via custom `RoundTripper`
 - [ ] **OBS-03**: OpenTelemetry (OTel) integration for tracing and metrics
 - [ ] **HTTP-01**: Robust retry logic with exponential backoff (e.g., using `go-retryablehttp`)
@@ -68,11 +68,11 @@ Requirements for initial release. Each maps to roadmap phases.
 | AUTH-01 | Phase 1 | Pending |
 | AUTH-02 | Phase 1 | Pending |
 | AUTH-03 | Phase 1 | Pending |
-| CLNT-01 | Phase 1 | Pending |
-| CLNT-02 | Phase 1 | Pending |
-| CLNT-03 | Phase 1 | Pending |
+| CLNT-01 | Phase 1 | Complete |
+| CLNT-02 | Phase 1 | Complete |
+| CLNT-03 | Phase 1 | Complete |
 | ERR-01 | Phase 1 | Pending |
-| OBS-01 | Phase 1 | Pending |
+| OBS-01 | Phase 1 | Complete |
 | OBS-02 | Phase 1 | Pending |
 | OBS-03 | Phase 2 | Pending |
 | HTTP-01 | Phase 2 | Pending |

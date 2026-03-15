@@ -1,9 +1,12 @@
 package payoneer
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/pablocrivella/go-payoneer/internal/auth"
 )
 
 const (
@@ -19,6 +22,9 @@ type Client struct {
 	HTTPClient *http.Client
 	Logger     *slog.Logger
 
+	tokenStore auth.TokenStore
+	authFn     func(ctx context.Context, c *Client) (*http.Client, error)
+
 	// Services
 	common   service // Reuse a single struct instead of allocating one for each service on the heap.
 	Accounts *AccountsService
@@ -32,7 +38,8 @@ func NewClient(opts ...Option) *Client {
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		Logger: slog.Default(),
+		Logger:     slog.Default(),
+		tokenStore: auth.NewInMemoryStore(),
 	}
 
 	for _, opt := range opts {
