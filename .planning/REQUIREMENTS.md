@@ -15,12 +15,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CLNT-01**: Functional options pattern for client configuration (BaseURL, Timeout, UserAgent, etc.)
 - [x] **CLNT-02**: Support for Sandbox and Production environments
 - [x] **CLNT-03**: Context-first API design (all methods accept `context.Context`)
-- [ ] **ERR-01**: Custom `APIError` type that captures Payoneer-specific error codes and messages from response bodies (even on 200 OK)
+- [x] **ERR-01**: Custom `APIError` type that captures Payoneer-specific error codes and messages from response bodies (even on 200 OK)
 
 ### Observability & Robustness (Phase 1/2)
 
 - [x] **OBS-01**: Integrated structured logging using `log/slog` with support for custom loggers
-- [ ] **OBS-02**: Redaction of sensitive information (tokens, secrets) in logs via custom `RoundTripper`
+- [x] **OBS-02**: Redaction of sensitive information (tokens, secrets) in logs via custom `RedactionHandler`
 - [ ] **OBS-03**: OpenTelemetry (OTel) integration for tracing and metrics
 - [ ] **HTTP-01**: Robust retry logic with exponential backoff (e.g., using `go-retryablehttp`)
 - [ ] **HTTP-02**: Proper handling of Rate Limiting (429) status codes and headers
@@ -71,9 +71,9 @@ Requirements for initial release. Each maps to roadmap phases.
 | CLNT-01 | Phase 1 | Complete |
 | CLNT-02 | Phase 1 | Complete |
 | CLNT-03 | Phase 1 | Complete |
-| ERR-01 | Phase 1 | Pending |
+| ERR-01 | Phase 1 | Complete |
 | OBS-01 | Phase 1 | Complete |
-| OBS-02 | Phase 1 | Pending |
+| OBS-02 | Phase 1 | Complete |
 | OBS-03 | Phase 2 | Pending |
 | HTTP-01 | Phase 2 | Pending |
 | HTTP-02 | Phase 2 | Pending |
@@ -96,4 +96,4 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ---
 *Requirements defined: 2026-03-15*
-*Last updated: 2026-03-15 after initial definition*
+*Last updated: 2026-03-15 after Phase 1 completion*
