@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Authentication & Client Foundation (Phase 1)
 
-- [ ] **AUTH-01**: Support OAuth 2.0 Client Credentials flow for application-level access
-- [ ] **AUTH-02**: Support OAuth 2.0 Authorization Code flow for user-level access
-- [ ] **AUTH-03**: Automatic token refreshing using `golang.org/x/oauth2` or similar thread-safe mechanism
+- [x] **AUTH-01**: Support OAuth 2.0 Client Credentials flow for application-level access
+- [x] **AUTH-02**: Support OAuth 2.0 Authorization Code flow for user-level access
+- [x] **AUTH-03**: Automatic token refreshing using `golang.org/x/oauth2` or similar thread-safe mechanism
 - [x] **CLNT-01**: Functional options pattern for client configuration (BaseURL, Timeout, UserAgent, etc.)
 - [x] **CLNT-02**: Support for Sandbox and Production environments
 - [x] **CLNT-03**: Context-first API design (all methods accept `context.Context`)
@@ -65,9 +65,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
 | CLNT-01 | Phase 1 | Complete |
 | CLNT-02 | Phase 1 | Complete |
 | CLNT-03 | Phase 1 | Complete |
