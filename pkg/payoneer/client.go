@@ -17,8 +17,8 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/pablocrivella/go-payoneer/internal/auth"
-	"github.com/pablocrivella/go-payoneer/internal/transport"
+	"github.com/pcriv/go-payoneer/internal/auth"
+	"github.com/pcriv/go-payoneer/internal/transport"
 )
 
 const (
@@ -54,6 +54,7 @@ type Client struct {
 	common   service
 	Accounts *AccountsService
 	Payouts  *PayoutsService
+	Payees   *PayeesService
 }
 
 // retryableLogger is a wrapper around slog.Logger that implements retryablehttp.LeveledLogger.
@@ -61,16 +62,19 @@ type retryableLogger struct {
 	l *slog.Logger
 }
 
-func (r *retryableLogger) Error(msg string, keysAndValues ...interface{}) {
+func (r *retryableLogger) Error(msg string, keysAndValues ...any) {
 	r.l.Error(msg, keysAndValues...)
 }
-func (r *retryableLogger) Info(msg string, keysAndValues ...interface{}) {
+
+func (r *retryableLogger) Info(msg string, keysAndValues ...any) {
 	r.l.Info(msg, keysAndValues...)
 }
-func (r *retryableLogger) Debug(msg string, keysAndValues ...interface{}) {
+
+func (r *retryableLogger) Debug(msg string, keysAndValues ...any) {
 	r.l.Debug(msg, keysAndValues...)
 }
-func (r *retryableLogger) Warn(msg string, keysAndValues ...interface{}) {
+
+func (r *retryableLogger) Warn(msg string, keysAndValues ...any) {
 	r.l.Warn(msg, keysAndValues...)
 }
 
@@ -151,6 +155,7 @@ func NewClient(opts ...Option) *Client {
 	c.common.client = c
 	c.Accounts = (*AccountsService)(&c.common)
 	c.Payouts = (*PayoutsService)(&c.common)
+	c.Payees = (*PayeesService)(&c.common)
 
 	return c
 }
@@ -188,8 +193,8 @@ func (c *Client) NewRequest(ctx context.Context, method, path string, body any) 
 	var buf io.ReadWriter
 	if body != nil {
 		buf = new(bytes.Buffer)
-		if err := json.NewEncoder(buf).Encode(body); err != nil {
-			return nil, err
+		if e := json.NewEncoder(buf).Encode(body); e != nil {
+			return nil, e
 		}
 	}
 
@@ -209,22 +214,23 @@ func (c *Client) NewRequest(ctx context.Context, method, path string, body any) 
 
 // Do executes an API request and parses the response into v.
 // It automatically validates the response using transport-level validation.
-func (c *Client) Do(req *http.Request, v any) (*http.Response, error) {
+func (c *Client) Do(req *http.Request, v any) error {
+	// #nosec G704
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
-	if err := transport.ValidateResponse(resp); err != nil {
-		return resp, err
+	if verr := transport.ValidateResponse(resp); verr != nil {
+		return verr
 	}
 
 	if v != nil {
-		if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
-			return resp, err
+		if derr := json.NewDecoder(resp.Body).Decode(v); derr != nil {
+			return derr
 		}
 	}
 
-	return resp, nil
+	return nil
 }

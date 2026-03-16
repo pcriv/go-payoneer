@@ -5,7 +5,7 @@
 - [x] **Phase 1: Client Foundation & Authentication** - Establish the core SDK structure and secure OAuth 2.0 integration. (Completed 2026-03-15)
 - [x] **Phase 2: Observability, Robustness & Account Services** - Implement reliable account data retrieval with full telemetry. (Completed 2026-03-15)
 - [x] **Phase 3: Financial Operations (Payouts)** - Enable core payout capabilities with business validation. (Completed 2026-03-16)
-- [ ] **Phase 4: Webhooks & Payee Management** - Complete the SDK with asynchronous notifications and payee onboarding.
+- [x] **Phase 4: Webhooks & Payee Management** - Complete the SDK with asynchronous notifications and payee onboarding. (Completed 2026-03-16)
 
 ## Phase Details
 
@@ -57,13 +57,13 @@
 **Depends on**: Phase 3
 **Requirements**: WEB-01, WEB-02, PYE-01, PYE-02
 **Success Criteria**:
-1. Developer can register a webhook handler that validates HMAC SHA-256 signatures.
-2. Webhook payloads are automatically parsed into typed Go structures.
-3. User can generate payee registration links and track payee status.
+1. ✓ Developer can register a webhook handler that validates HMAC SHA-256 signatures.
+2. ✓ Webhook payloads are automatically parsed into typed Go structures.
+3. ✓ User can generate payee registration links and track payee status.
 
-**Plans:** 2 plans
-- [ ] 04-01-PLAN.md — Webhook Foundation & Signature Verification
-- [ ] 04-02-PLAN.md — Payee Management Service
+**Plans:** 2/2 plans executed
+- [x] 04-01-PLAN.md — Webhook Foundation & Signature Verification
+- [x] 04-02-PLAN.md — Payee Management Service
 
 ## Progress Table
 
@@ -72,7 +72,7 @@
 | 1. Client Foundation & Authentication | 3/3 | Complete | 2026-03-15 |
 | 2. Observability, Robustness & Account Services | 2/2 | Complete | 2026-03-15 |
 | 3. Financial Operations (Payouts) | 2/2 | Complete | 2026-03-16 |
-| 4. Webhooks & Payee Management | 0/2 | Not started | - |
+| 4. Webhooks & Payee Management | 2/2 | Complete | 2026-03-16 |
 
 ---
 *Roadmap generated: 2026-03-15*

@@ -3,6 +3,7 @@ package transport
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"strings"
 )
 
@@ -43,6 +44,7 @@ func (h *RedactionHandler) Handle(ctx context.Context, record slog.Record) error
 	var attrs []slog.Attr
 	record.Attrs(func(a slog.Attr) bool {
 		attrs = append(attrs, h.redactAttr(a))
+
 		return true
 	})
 
@@ -59,6 +61,7 @@ func (h *RedactionHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	for i, a := range attrs {
 		redactedAttrs[i] = h.redactAttr(a)
 	}
+
 	return &RedactionHandler{
 		handler: h.handler.WithAttrs(redactedAttrs),
 		headers: h.headers,
@@ -78,26 +81,41 @@ func (h *RedactionHandler) WithGroup(name string) slog.Handler {
 func (h *RedactionHandler) redactAttr(a slog.Attr) slog.Attr {
 	keyLower := strings.ToLower(a.Key)
 
-	for _, header := range h.headers {
-		if keyLower == header {
-			return slog.String(a.Key, "[REDACTED]")
-		}
+	if slices.Contains(h.headers, keyLower) {
+		return slog.String(a.Key, "[REDACTED]")
 	}
 
-	for _, field := range h.fields {
-		if keyLower == field {
-			return slog.String(a.Key, "[REDACTED]")
-		}
+	if slices.Contains(h.fields, keyLower) {
+		return slog.String(a.Key, "[REDACTED]")
 	}
 
 	// Handle recursive redaction for Groups
 	if a.Value.Kind() == slog.KindGroup {
 		groupAttrs := a.Value.Group()
-		args := make([]any, len(groupAttrs))
+		newAttrs := make([]slog.Attr, len(groupAttrs))
 		for i, ga := range groupAttrs {
-			args[i] = h.redactAttr(ga)
+			newAttrs[i] = h.redactAttr(ga)
 		}
-		return slog.Group(a.Key, args...)
+
+		return slog.Attr{
+			Key:   a.Key,
+			Value: slog.GroupValue(newAttrs...),
+		}
+	}
+
+	// Handle recursive redaction for map[string]any (KindAny)
+	if a.Value.Kind() == slog.KindAny {
+		if m, ok := a.Value.Any().(map[string]any); ok {
+			newAttrs := make([]slog.Attr, 0, len(m))
+			for k, v := range m {
+				newAttrs = append(newAttrs, h.redactAttr(slog.Any(k, v)))
+			}
+
+			return slog.Attr{
+				Key:   a.Key,
+				Value: slog.GroupValue(newAttrs...),
+			}
+		}
 	}
 
 	return a

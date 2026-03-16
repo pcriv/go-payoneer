@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/pablocrivella/go-payoneer/internal/transport"
+	"github.com/pcriv/go-payoneer/internal/transport"
 )
 
 func TestRedactionHandler(t *testing.T) {
@@ -43,7 +43,8 @@ func TestRedactionHandler(t *testing.T) {
 		)
 
 		output := buf.String()
-		if bytes.Contains([]byte(output), []byte("token-123")) || bytes.Contains([]byte(output), []byte("refresh-456")) || bytes.Contains([]byte(output), []byte("secret-789")) {
+		if bytes.Contains([]byte(output), []byte("token-123")) || bytes.Contains([]byte(output), []byte("refresh-456")) ||
+			bytes.Contains([]byte(output), []byte("secret-789")) {
 			t.Errorf("Expected sensitive fields to be redacted, got %s", output)
 		}
 		if !bytes.Contains([]byte(output), []byte("3600")) {

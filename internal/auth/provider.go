@@ -80,7 +80,7 @@ type storedTokenSource struct {
 func (s *storedTokenSource) Token() (*oauth2.Token, error) {
 	// If store has a valid token, we could return it, but oauth2.ReuseTokenSource
 	// is usually better. However, our goal is to keep the store updated.
-	
+
 	t, err := s.inner.Token()
 	if err != nil {
 		return nil, err
@@ -89,5 +89,6 @@ func (s *storedTokenSource) Token() (*oauth2.Token, error) {
 	// We store the token every time it's retrieved from the inner source.
 	// x/oauth2's TokenSource returned by config.TokenSource will refresh it.
 	s.store.Set(t)
+
 	return t, nil
 }

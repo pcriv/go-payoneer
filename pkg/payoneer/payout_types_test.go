@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/pablocrivella/go-payoneer/pkg/payoneer"
+	"github.com/pcriv/go-payoneer/pkg/payoneer"
 )
 
 func TestPayoutModels_Serialization(t *testing.T) {
@@ -26,14 +26,14 @@ func TestPayoutModels_Serialization(t *testing.T) {
 			t.Fatalf("failed to marshal MassPayoutRequest: %v", err)
 		}
 
-		var got, want interface{}
-		if err := json.Unmarshal(data, &got); err != nil {
-			t.Fatalf("failed to unmarshal actual JSON: %v", err)
+		var got, want any
+		if uerr := json.Unmarshal(data, &got); uerr != nil {
+			t.Fatalf("failed to unmarshal actual JSON: %v", uerr)
 		}
 
 		expected := `{"payments":[{"client_reference_id":"ref123","amount":10.5,"payee_id":"payee456","currency":"USD","description":"Test Payment"}]}`
-		if err := json.Unmarshal([]byte(expected), &want); err != nil {
-			t.Fatalf("failed to unmarshal expected JSON: %v", err)
+		if uerr := json.Unmarshal([]byte(expected), &want); uerr != nil {
+			t.Fatalf("failed to unmarshal expected JSON: %v", uerr)
 		}
 
 		gotStr, _ := json.Marshal(got)
@@ -53,8 +53,7 @@ func TestPayoutModels_Serialization(t *testing.T) {
 		}`
 
 		var result payoneer.PayoutBatchResult
-		err := json.Unmarshal([]byte(jsonData), &result)
-		if err != nil {
+		if err := json.Unmarshal([]byte(jsonData), &result); err != nil {
 			t.Fatalf("failed to unmarshal PayoutBatchResult: %v", err)
 		}
 

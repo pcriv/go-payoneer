@@ -1,0 +1,76 @@
+
+---
+version: "2"
+run:
+  relative-path-mode: gomod
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+    - golines
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - localmodule
+    golines:
+      max-len: 150
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - gocritic
+    - gosec
+    - govet
+    - inamedparam
+    - noctx
+    - nlreturn
+    - sloglint
+    - testifylint
+    - usestdlibvars
+    - usetesting
+    - modernize
+  settings:
+    testifylint:
+      enable-all: true
+    errcheck:
+      check-type-assertions: true
+    govet:
+      disable:
+        - fieldalignment
+      enable-all: true
+      settings:
+        shadow:
+          strict: true
+    sloglint:
+      attr-only: true
+      no-global: all
+      msg-style: lowercased
+      key-naming-case: snake
+      context: scope
+    spancheck:
+      checks:
+        - end
+        - record-error
+        - set-status
+  exclusions:
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+    rules:
+      # Exclude some linters from running on test files.
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - forbidigo
+          - noctx
+issues:
+  max-same-issues: 50

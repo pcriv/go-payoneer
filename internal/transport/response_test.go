@@ -6,15 +6,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/pablocrivella/go-payoneer/internal/transport"
-	"github.com/pablocrivella/go-payoneer/pkg/payoneer"
+	"github.com/pcriv/go-payoneer/internal/transport"
+	"github.com/pcriv/go-payoneer/pkg/payoneer"
 )
 
 func TestValidateResponse(t *testing.T) {
 	t.Run("Valid HTTP 200 Success", func(t *testing.T) {
 		body := `{"status": "Success", "data": {}}`
 		resp := &http.Response{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(bytes.NewBufferString(body)),
 		}
 
@@ -33,7 +33,7 @@ func TestValidateResponse(t *testing.T) {
 	t.Run("HTTP 400 Bad Request", func(t *testing.T) {
 		body := `{"error": "invalid_request", "error_description": "The request is missing a required parameter"}`
 		resp := &http.Response{
-			StatusCode: 400,
+			StatusCode: http.StatusBadRequest,
 			Body:       io.NopCloser(bytes.NewBufferString(body)),
 		}
 
@@ -56,7 +56,7 @@ func TestValidateResponse(t *testing.T) {
 		// Payoneer sometimes returns 200 OK with an error status in the body
 		body := `{"status": "Failure", "error_code": "1234", "description": "Business validation failed"}`
 		resp := &http.Response{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(bytes.NewBufferString(body)),
 		}
 
@@ -75,6 +75,20 @@ func TestValidateResponse(t *testing.T) {
 		}
 		if apiErr.Code != "1234" {
 			t.Errorf("expected Code 1234, got %s", apiErr.Code)
+		}
+	})
+
+	t.Run("HTTP 200 with Resource Status (Not an error)", func(t *testing.T) {
+		// A transaction can have status "Pending" which is not an API error
+		body := `{"id": "123", "status": "Pending", "amount": 100}`
+		resp := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewBufferString(body)),
+		}
+
+		err := transport.ValidateResponse(resp)
+		if err != nil {
+			t.Errorf("expected no error, got %v", err)
 		}
 	})
 }

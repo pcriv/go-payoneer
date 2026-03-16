@@ -61,7 +61,7 @@ func TestValidateSignature(t *testing.T) {
 func TestParseWebhook(t *testing.T) {
 	secret := "test-secret"
 	payload := `{"event_type":"payout_created","event_id":"123","timestamp":"2023-01-01T00:00:00Z","content":{"status":"COMPLETED"}}`
-	
+
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write([]byte(payload))
 	signature := hex.EncodeToString(h.Sum(nil))

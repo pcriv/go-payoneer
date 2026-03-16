@@ -27,6 +27,7 @@ func NewInMemoryStore() *InMemoryStore {
 func (s *InMemoryStore) Get() *oauth2.Token {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	return s.token
 }
 
