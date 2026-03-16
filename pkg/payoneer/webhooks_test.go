@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -95,6 +96,63 @@ func TestParseWebhook(t *testing.T) {
 		_, err := ParseWebhook(req, secret)
 		if err == nil {
 			t.Error("expected error for invalid signature")
+		}
+	})
+}
+
+func TestWebhookMiddleware(t *testing.T) {
+	secret := "test-secret"
+	payload := `{"event_type":"payout_created"}`
+
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(payload))
+	signature := hex.EncodeToString(h.Sum(nil))
+
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(body) != payload {
+			t.Errorf("got body %s, want %s", string(body), payload)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+
+	middleware := WebhookValidator(secret)(nextHandler)
+
+	t.Run("valid signature proceeds", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/webhooks", strings.NewReader(payload))
+		req.Header.Set("X-Payoneer-Signature", signature)
+		rr := httptest.NewRecorder()
+
+		middleware.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		}
+	})
+
+	t.Run("invalid signature returns 401", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/webhooks", strings.NewReader(payload))
+		req.Header.Set("X-Payoneer-Signature", "wrong")
+		rr := httptest.NewRecorder()
+
+		middleware.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusUnauthorized {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusUnauthorized)
+		}
+	})
+
+	t.Run("missing signature returns 401", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/webhooks", strings.NewReader(payload))
+		rr := httptest.NewRecorder()
+
+		middleware.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusUnauthorized {
+			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusUnauthorized)
 		}
 	})
 }
