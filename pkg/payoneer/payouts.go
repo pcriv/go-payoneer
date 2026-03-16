@@ -48,6 +48,9 @@ func (s *PayoutsService) GetPayoutStatus(ctx context.Context, clientReferenceID 
 	if s.client.ProgramID == "" {
 		return nil, ErrProgramIDRequired
 	}
+	if clientReferenceID == "" {
+		return nil, ErrClientReferenceIDRequired
+	}
 
 	path := fmt.Sprintf("/v4/programs/%s/payouts/%s/status", s.client.ProgramID, url.PathEscape(clientReferenceID))
 
@@ -76,6 +79,9 @@ func (s *PayoutsService) GetPayoutStatus(ctx context.Context, clientReferenceID 
 func (s *PayoutsService) CancelPayout(ctx context.Context, clientReferenceID string) error {
 	if s.client.ProgramID == "" {
 		return ErrProgramIDRequired
+	}
+	if clientReferenceID == "" {
+		return ErrClientReferenceIDRequired
 	}
 
 	path := fmt.Sprintf("/v4/programs/%s/payouts/%s/cancel", s.client.ProgramID, url.PathEscape(clientReferenceID))

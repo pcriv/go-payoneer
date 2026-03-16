@@ -108,7 +108,7 @@ func TestClient_ErrorHandling(t *testing.T) {
 	}
 }
 
-func TestAccounts_GetBalances(t *testing.T) {
+func TestAccounts_ListBalances(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v2/accounts/123/balances" {
 			t.Errorf("expected path /v2/accounts/123/balances, got %s", r.URL.Path)
@@ -119,9 +119,9 @@ func TestAccounts_GetBalances(t *testing.T) {
 	defer server.Close()
 
 	client := payoneer.NewClient(payoneer.WithBaseURL(server.URL))
-	balances, err := client.Accounts.GetBalances(context.Background(), "123")
+	balances, err := client.Accounts.ListBalances(context.Background(), "123")
 	if err != nil {
-		t.Fatalf("GetBalances() failed: %v", err)
+		t.Fatalf("ListBalances() failed: %v", err)
 	}
 
 	if len(balances) != 1 || balances[0].Currency != "USD" || balances[0].Amount != 12345 {

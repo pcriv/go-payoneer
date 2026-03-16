@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -43,6 +44,10 @@ type TransactionListOption func(*url.Values)
 
 // ListTransactions retrieves transaction history for a specific Payoneer account.
 func (s *AccountsService) ListTransactions(ctx context.Context, accountID string, opts ...TransactionListOption) ([]Transaction, error) {
+	if accountID == "" {
+		return nil, ErrAccountIDRequired
+	}
+
 	path := fmt.Sprintf("/v2/accounts/%s/transactions", accountID)
 
 	if s.client.tracer != nil {
@@ -52,7 +57,7 @@ func (s *AccountsService) ListTransactions(ctx context.Context, accountID string
 		defer span.End()
 	}
 
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +89,13 @@ func (s *AccountsService) ListTransactions(ctx context.Context, accountID string
 
 // GetTransaction retrieves a specific transaction by ID.
 func (s *AccountsService) GetTransaction(ctx context.Context, accountID string, transactionID string) (*Transaction, error) {
+	if accountID == "" {
+		return nil, ErrAccountIDRequired
+	}
+	if transactionID == "" {
+		return nil, ErrTransactionIDRequired
+	}
+
 	path := fmt.Sprintf("/v2/accounts/%s/transactions/%s", accountID, transactionID)
 
 	if s.client.tracer != nil {
@@ -96,7 +108,7 @@ func (s *AccountsService) GetTransaction(ctx context.Context, accountID string, 
 		defer span.End()
 	}
 
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}

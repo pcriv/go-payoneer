@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Payee represents a Payoneer payee's registration details.
@@ -73,10 +76,13 @@ func WithPayeeDetails(firstName, lastName, email string) RegistrationOption {
 	}
 }
 
-// RegistrationURL generates a unique onboarding link for a payee.
-func (s *PayeesService) RegistrationURL(ctx context.Context, payeeID string, opts ...RegistrationOption) (string, error) {
+// CreateRegistrationURL generates a unique onboarding link for a payee.
+func (s *PayeesService) CreateRegistrationURL(ctx context.Context, payeeID string, opts ...RegistrationOption) (string, error) {
 	if s.client.ProgramID == "" {
 		return "", ErrProgramIDRequired
+	}
+	if payeeID == "" {
+		return "", ErrPayeeIDRequired
 	}
 
 	reqBody := &RegistrationLinkRequest{
@@ -88,14 +94,22 @@ func (s *PayeesService) RegistrationURL(ctx context.Context, payeeID string, opt
 	}
 
 	path := fmt.Sprintf("/v4/programs/%s/payees/registration-link", s.client.ProgramID)
+
+	if s.client.tracer != nil {
+		var span trace.Span
+		ctx, span = s.client.tracer.Start(ctx, "payoneer.payee.create_registration_url",
+			trace.WithAttributes(attribute.String("payee_id", payeeID)))
+		defer span.End()
+	}
+
 	req, err := s.client.NewRequest(ctx, http.MethodPost, path, reqBody)
 	if err != nil {
 		return "", err
 	}
 
 	var resp RegistrationLinkResponse
-	if derr := s.client.Do(req, &resp); derr != nil {
-		return "", derr
+	if err = s.client.Do(req, &resp); err != nil {
+		return "", err
 	}
 
 	return resp.RegistrationLink, nil
@@ -106,16 +120,27 @@ func (s *PayeesService) GetStatus(ctx context.Context, payeeID string) (*PayeeSt
 	if s.client.ProgramID == "" {
 		return nil, ErrProgramIDRequired
 	}
+	if payeeID == "" {
+		return nil, ErrPayeeIDRequired
+	}
 
 	path := fmt.Sprintf("/v4/programs/%s/payees/%s/status", s.client.ProgramID, payeeID)
+
+	if s.client.tracer != nil {
+		var span trace.Span
+		ctx, span = s.client.tracer.Start(ctx, "payoneer.payee.get_status",
+			trace.WithAttributes(attribute.String("payee_id", payeeID)))
+		defer span.End()
+	}
+
 	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	var status PayeeStatus
-	if derr := s.client.Do(req, &status); derr != nil {
-		return nil, derr
+	if err = s.client.Do(req, &status); err != nil {
+		return nil, err
 	}
 
 	return &status, nil
@@ -126,16 +151,27 @@ func (s *PayeesService) Get(ctx context.Context, payeeID string) (*Payee, error)
 	if s.client.ProgramID == "" {
 		return nil, ErrProgramIDRequired
 	}
+	if payeeID == "" {
+		return nil, ErrPayeeIDRequired
+	}
 
 	path := fmt.Sprintf("/v4/programs/%s/payees/%s", s.client.ProgramID, payeeID)
+
+	if s.client.tracer != nil {
+		var span trace.Span
+		ctx, span = s.client.tracer.Start(ctx, "payoneer.payee.get",
+			trace.WithAttributes(attribute.String("payee_id", payeeID)))
+		defer span.End()
+	}
+
 	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	var payee Payee
-	if derr := s.client.Do(req, &payee); derr != nil {
-		return nil, derr
+	if err = s.client.Do(req, &payee); err != nil {
+		return nil, err
 	}
 
 	return &payee, nil

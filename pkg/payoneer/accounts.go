@@ -26,13 +26,17 @@ type balanceResponse struct {
 	Items []balanceItem `json:"items"`
 }
 
-// GetBalances retrieves the balances for a specific Payoneer account.
-func (s *AccountsService) GetBalances(ctx context.Context, accountID string) ([]Balance, error) {
+// ListBalances retrieves the balances for a specific Payoneer account.
+func (s *AccountsService) ListBalances(ctx context.Context, accountID string) ([]Balance, error) {
+	if accountID == "" {
+		return nil, ErrAccountIDRequired
+	}
+
 	path := fmt.Sprintf("/v2/accounts/%s/balances", accountID)
 
 	if s.client.tracer != nil {
 		var span trace.Span
-		ctx, span = s.client.tracer.Start(ctx, "payoneer.account.get_balances",
+		ctx, span = s.client.tracer.Start(ctx, "payoneer.account.list_balances",
 			trace.WithAttributes(attribute.String("account_id", accountID)))
 		defer span.End()
 	}

@@ -100,7 +100,7 @@ mux.Handle("/webhooks", payoneer.WebhookValidator(secret)(
 
 ```go
 // Generate a link for a new payee to register
-link, err := client.Payees.RegistrationURL(ctx, "payee-789", 
+link, err := client.Payees.CreateRegistrationURL(ctx, "payee-789",
     payoneer.WithRedirectURL("https://myapp.com/onboarded"),
     payoneer.WithLanguage("en"),
 )
