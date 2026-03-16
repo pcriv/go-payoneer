@@ -13,7 +13,7 @@ import (
 // CreateMassPayout submits a batch of payout requests.
 func (s *PayoutsService) CreateMassPayout(ctx context.Context, req *MassPayoutRequest) (*PayoutBatchResult, error) {
 	if s.client.ProgramID == "" {
-		return nil, fmt.Errorf("program_id is required")
+		return nil, ErrProgramIDRequired
 	}
 
 	if err := req.Validate(); err != nil {
@@ -46,7 +46,7 @@ func (s *PayoutsService) CreateMassPayout(ctx context.Context, req *MassPayoutRe
 // GetPayoutStatus retrieves the status of a specific payout.
 func (s *PayoutsService) GetPayoutStatus(ctx context.Context, clientReferenceID string) (*PayoutStatusResult, error) {
 	if s.client.ProgramID == "" {
-		return nil, fmt.Errorf("program_id is required")
+		return nil, ErrProgramIDRequired
 	}
 
 	path := fmt.Sprintf("/v4/programs/%s/payouts/%s/status", s.client.ProgramID, url.PathEscape(clientReferenceID))
@@ -75,7 +75,7 @@ func (s *PayoutsService) GetPayoutStatus(ctx context.Context, clientReferenceID 
 // CancelPayout cancels a pending payout.
 func (s *PayoutsService) CancelPayout(ctx context.Context, clientReferenceID string) error {
 	if s.client.ProgramID == "" {
-		return fmt.Errorf("program_id is required")
+		return ErrProgramIDRequired
 	}
 
 	path := fmt.Sprintf("/v4/programs/%s/payouts/%s/cancel", s.client.ProgramID, url.PathEscape(clientReferenceID))

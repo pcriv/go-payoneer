@@ -40,7 +40,7 @@ func ParseWebhook(r *http.Request, secret string) (*WebhookEvent, error) {
 		return nil, errors.New("missing " + HeaderPayoneerSignature + " header")
 	}
 
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20)) // 1 MB max
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func WebhookValidator(secret string) func(http.Handler) http.Handler {
 				return
 			}
 
-			body, err := io.ReadAll(r.Body)
+			body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20)) // 1 MB max
 			if err != nil {
 				http.Error(w, "failed to read body", http.StatusInternalServerError)
 

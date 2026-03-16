@@ -32,7 +32,8 @@ import "github.com/pcriv/go-payoneer/pkg/payoneer"
 client := payoneer.NewClient(
     payoneer.WithSandbox(), // Use Sandbox for development
     payoneer.WithProgramID("your-program-id"),
-    payoneer.WithRetryMax(3),
+    payoneer.WithClientCredentials("your-client-id", "your-client-secret"),
+    payoneer.WithRetries(3),
 )
 ```
 
@@ -41,11 +42,8 @@ client := payoneer.NewClient(
 ```go
 ctx := context.Background()
 
-// OAuth 2.0 Client Credentials flow (recommended for backend-to-backend)
-err := client.Authenticate(ctx, payoneer.WithClientCredentials(
-    "your-client-id",
-    "your-client-secret",
-))
+// Triggers the configured OAuth 2.0 flow (Client Credentials in this example)
+err := client.Authenticate(ctx)
 ```
 
 ## Usage Examples

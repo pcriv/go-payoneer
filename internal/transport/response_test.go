@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/pcriv/go-payoneer/internal/transport"
-	"github.com/pcriv/go-payoneer/pkg/payoneer"
+	payoneererrors "github.com/pcriv/go-payoneer/pkg/payoneer/errors"
 )
 
 func TestValidateResponse(t *testing.T) {
@@ -42,8 +42,8 @@ func TestValidateResponse(t *testing.T) {
 			t.Fatal("expected error, got nil")
 		}
 
-		var apiErr *payoneer.APIError
-		if !payoneer.AsAPIError(err, &apiErr) {
+		var apiErr *payoneererrors.APIError
+		if !payoneererrors.AsAPIError(err, &apiErr) {
 			t.Fatalf("expected APIError, got %T", err)
 		}
 
@@ -65,8 +65,8 @@ func TestValidateResponse(t *testing.T) {
 			t.Fatal("expected error, got nil")
 		}
 
-		var apiErr *payoneer.APIError
-		if !payoneer.AsAPIError(err, &apiErr) {
+		var apiErr *payoneererrors.APIError
+		if !payoneererrors.AsAPIError(err, &apiErr) {
 			t.Fatalf("expected APIError, got %T", err)
 		}
 

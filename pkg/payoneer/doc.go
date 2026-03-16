@@ -17,15 +17,13 @@ Initialization:
 	client := payoneer.NewClient(
 	    payoneer.WithSandbox(),
 	    payoneer.WithProgramID("my-program-id"),
+	    payoneer.WithClientCredentials("my-client-id", "my-client-secret"),
 	    payoneer.WithLogger(myLogger),
 	)
 
-Authentication (Client Credentials):
+Authentication:
 
-	err := client.Authenticate(ctx, payoneer.WithClientCredentials(
-	    "my-client-id",
-	    "my-client-secret",
-	))
+	err := client.Authenticate(ctx)
 
 Usage Example (Retrieve Balances):
 

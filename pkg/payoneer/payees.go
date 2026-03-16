@@ -75,6 +75,10 @@ func WithPayeeDetails(firstName, lastName, email string) RegistrationOption {
 
 // RegistrationURL generates a unique onboarding link for a payee.
 func (s *PayeesService) RegistrationURL(ctx context.Context, payeeID string, opts ...RegistrationOption) (string, error) {
+	if s.client.ProgramID == "" {
+		return "", ErrProgramIDRequired
+	}
+
 	reqBody := &RegistrationLinkRequest{
 		PayeeID: payeeID,
 	}
@@ -99,6 +103,10 @@ func (s *PayeesService) RegistrationURL(ctx context.Context, payeeID string, opt
 
 // GetStatus retrieves the current standing of a payee.
 func (s *PayeesService) GetStatus(ctx context.Context, payeeID string) (*PayeeStatus, error) {
+	if s.client.ProgramID == "" {
+		return nil, ErrProgramIDRequired
+	}
+
 	path := fmt.Sprintf("/v4/programs/%s/payees/%s/status", s.client.ProgramID, payeeID)
 	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -115,6 +123,10 @@ func (s *PayeesService) GetStatus(ctx context.Context, payeeID string) (*PayeeSt
 
 // Get retrieves full details for a specific payee.
 func (s *PayeesService) Get(ctx context.Context, payeeID string) (*Payee, error) {
+	if s.client.ProgramID == "" {
+		return nil, ErrProgramIDRequired
+	}
+
 	path := fmt.Sprintf("/v4/programs/%s/payees/%s", s.client.ProgramID, payeeID)
 	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {

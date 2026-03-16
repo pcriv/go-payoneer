@@ -54,6 +54,11 @@ func WithLogger(logger *slog.Logger) Option {
 	}
 }
 
+// WithSandbox configures the client to use the Payoneer sandbox environment.
+func WithSandbox() Option {
+	return WithBaseURL(SandboxBaseURL)
+}
+
 // WithRetries sets the maximum number of retries for failed requests.
 func WithRetries(max int) Option {
 	return func(c *Client) {
