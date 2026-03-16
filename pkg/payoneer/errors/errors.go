@@ -1,7 +1,6 @@
 package errors
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -26,9 +25,4 @@ func (e *APIError) Error() string {
 	}
 
 	return fmt.Sprintf("payoneer api error: %s - %s (Status: %s, HTTP %d)", e.Code, e.Message, e.Status, e.HTTPStatusCode)
-}
-
-// AsAPIError returns true if err is a *APIError.
-func AsAPIError(err error, target **APIError) bool {
-	return errors.As(err, target)
 }

@@ -3,6 +3,7 @@ package payoneer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -137,7 +138,7 @@ func TestPayoutErrorHandling(t *testing.T) {
 		require.Error(t, err)
 
 		var apiErr *payoneererrors.APIError
-		if payoneererrors.AsAPIError(err, &apiErr) {
+		if errors.As(err, &apiErr) {
 			assert.Equal(t, payoneererrors.ErrCodePayoutNotFound, apiErr.Code)
 			assert.Equal(t, http.StatusNotFound, apiErr.HTTPStatusCode)
 		} else {
