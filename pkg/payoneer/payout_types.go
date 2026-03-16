@@ -75,8 +75,8 @@ func (r *MassPayoutRequest) Validate() error {
 type PayoutBatchResult struct {
 	BatchID     string           `json:"batch_id"`
 	Status      string           `json:"status"`
-	Reason      Optional[string] `json:"reason,omitempty"`
-	ReleaseDate Optional[string] `json:"release_date,omitempty"`
+	Reason      Optional[string] `json:"reason"`
+	ReleaseDate Optional[string] `json:"release_date"`
 }
 
 // PayoutStatusResult represents the status of a single payout.
@@ -84,6 +84,6 @@ type PayoutStatusResult struct {
 	PayoutID          string           `json:"payout_id"`
 	ClientReferenceID string           `json:"client_reference_id"`
 	Status            string           `json:"status"`
-	Reason            Optional[string] `json:"reason,omitempty"`
-	ReleaseDate       Optional[string] `json:"release_date,omitempty"`
+	Reason            Optional[string] `json:"reason"`
+	ReleaseDate       Optional[string] `json:"release_date"`
 }

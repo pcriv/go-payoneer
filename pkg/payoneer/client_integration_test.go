@@ -3,6 +3,7 @@ package payoneer_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -98,7 +99,7 @@ func TestClient_ErrorHandling(t *testing.T) {
 	}
 
 	var apiErr *payoneer.APIError
-	if !payoneer.AsAPIError(err, &apiErr) {
+	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected APIError, got %T", err)
 	}
 

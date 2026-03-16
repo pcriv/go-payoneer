@@ -30,9 +30,9 @@ type RegistrationLinkRequest struct {
 	AlreadyHaveAnAccount bool             `json:"already_have_an_account"`
 	RedirectURL          string           `json:"redirect_url,omitempty"`
 	Language             string           `json:"language,omitempty"`
-	FirstName            Optional[string] `json:"first_name,omitempty"`
-	LastName             Optional[string] `json:"last_name,omitempty"`
-	Email                Optional[string] `json:"email,omitempty"`
+	FirstName            Optional[string] `json:"first_name"`
+	LastName             Optional[string] `json:"last_name"`
+	Email                Optional[string] `json:"email"`
 }
 
 // RegistrationLinkResponse wraps the generated onboarding URL.

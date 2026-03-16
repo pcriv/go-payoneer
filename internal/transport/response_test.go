@@ -2,6 +2,7 @@ package transport_test
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"testing"
@@ -43,7 +44,7 @@ func TestValidateResponse(t *testing.T) {
 		}
 
 		var apiErr *payoneererrors.APIError
-		if !payoneererrors.AsAPIError(err, &apiErr) {
+		if !errors.As(err, &apiErr) {
 			t.Fatalf("expected APIError, got %T", err)
 		}
 
@@ -66,7 +67,7 @@ func TestValidateResponse(t *testing.T) {
 		}
 
 		var apiErr *payoneererrors.APIError
-		if !payoneererrors.AsAPIError(err, &apiErr) {
+		if !errors.As(err, &apiErr) {
 			t.Fatalf("expected APIError, got %T", err)
 		}
 
