@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 )
 
 // PayoutItem represents a single payment in a mass payout request.
@@ -40,7 +41,7 @@ func (p *PayoutItem) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	p.Amount = int64(aux.Amount * 100)
+	p.Amount = int64(math.Round(aux.Amount * 100))
 
 	return nil
 }

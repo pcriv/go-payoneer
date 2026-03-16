@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -48,7 +49,7 @@ func (t *LoggingTransport) logRequest(req *http.Request) {
 
 	// Log headers (will be redacted by the RedactionHandler if configured)
 	for name, values := range req.Header {
-		attrs = append(attrs, slog.String(name, values[0]))
+		attrs = append(attrs, slog.String(name, strings.Join(values, ", ")))
 	}
 
 	// Log body if it's small and not a stream
@@ -79,7 +80,7 @@ func (t *LoggingTransport) logResponse(resp *http.Response, duration time.Durati
 
 	// Log headers
 	for name, values := range resp.Header {
-		attrs = append(attrs, slog.String(name, values[0]))
+		attrs = append(attrs, slog.String(name, strings.Join(values, ", ")))
 	}
 
 	// Log body
