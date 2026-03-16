@@ -2,6 +2,7 @@ package transport
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -23,12 +24,13 @@ func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	resp, err := t.Next.RoundTrip(req)
 	if err != nil {
-		t.Logger.Error("Request failed",
+		t.Logger.Error("request failed",
 			slog.String("method", req.Method),
 			slog.String("url", req.URL.String()),
 			slog.Duration("duration", time.Since(start)),
 			slog.Any("error", err),
 		)
+
 		return nil, err
 	}
 
@@ -39,7 +41,7 @@ func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 func (t *LoggingTransport) logRequest(req *http.Request) {
-	attrs := []any{
+	attrs := []slog.Attr{
 		slog.String("method", req.Method),
 		slog.String("url", req.URL.String()),
 	}
@@ -49,22 +51,28 @@ func (t *LoggingTransport) logRequest(req *http.Request) {
 		attrs = append(attrs, slog.String(name, values[0]))
 	}
 
-	// Log body if it's small and not a stream (simplified for now)
+	// Log body if it's small and not a stream
 	if req.Body != nil {
 		body, err := io.ReadAll(req.Body)
 		if err == nil {
 			req.Body = io.NopCloser(bytes.NewBuffer(body))
 			if len(body) < 1024 { // Only log small bodies
-				attrs = append(attrs, slog.String("body", string(body)))
+				var bodyMap map[string]any
+				if uerr := json.Unmarshal(body, &bodyMap); uerr == nil {
+					// Add body fields as a group for the RedactionHandler to process
+					attrs = append(attrs, slog.Any("body", bodyMap))
+				} else {
+					attrs = append(attrs, slog.String("body", string(body)))
+				}
 			}
 		}
 	}
 
-	t.Logger.Info("Sending Request", attrs...)
+	t.Logger.LogAttrs(req.Context(), slog.LevelInfo, "sending request", attrs...)
 }
 
 func (t *LoggingTransport) logResponse(resp *http.Response, duration time.Duration) {
-	attrs := []any{
+	attrs := []slog.Attr{
 		slog.Int("status", resp.StatusCode),
 		slog.Duration("duration", duration),
 	}
@@ -80,10 +88,15 @@ func (t *LoggingTransport) logResponse(resp *http.Response, duration time.Durati
 		if err == nil {
 			resp.Body = io.NopCloser(bytes.NewBuffer(body))
 			if len(body) < 1024 {
-				attrs = append(attrs, slog.String("body", string(body)))
+				var bodyMap map[string]any
+				if uerr := json.Unmarshal(body, &bodyMap); uerr == nil {
+					attrs = append(attrs, slog.Any("body", bodyMap))
+				} else {
+					attrs = append(attrs, slog.String("body", string(body)))
+				}
 			}
 		}
 	}
 
-	t.Logger.Info("Received Response", attrs...)
+	t.Logger.LogAttrs(resp.Request.Context(), slog.LevelInfo, "received response", attrs...)
 }

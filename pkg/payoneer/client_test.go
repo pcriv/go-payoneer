@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pablocrivella/go-payoneer/pkg/payoneer"
+	"github.com/pcriv/go-payoneer/pkg/payoneer"
 )
 
 func TestNewClient(t *testing.T) {
@@ -54,6 +54,14 @@ func TestNewClient(t *testing.T) {
 		}
 		if client.Payouts == nil {
 			t.Error("expected Payouts service to be initialized")
+		}
+	})
+
+	t.Run("Custom ProgramID", func(t *testing.T) {
+		programID := "123456"
+		client := payoneer.NewClient(payoneer.WithProgramID(programID))
+		if client.ProgramID != programID {
+			t.Errorf("expected ProgramID to be %s, got %s", programID, client.ProgramID)
 		}
 	})
 }

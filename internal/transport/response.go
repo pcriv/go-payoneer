@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pablocrivella/go-payoneer/pkg/payoneer/errors"
+	"github.com/pcriv/go-payoneer/pkg/payoneer/errors"
 )
 
 // ValidateResponse checks the HTTP response for errors.
@@ -17,6 +17,7 @@ func ValidateResponse(resp *http.Response) error {
 		if resp.StatusCode >= 400 {
 			return &errors.APIError{HTTPStatusCode: resp.StatusCode}
 		}
+
 		return nil
 	}
 
@@ -31,15 +32,17 @@ func ValidateResponse(resp *http.Response) error {
 		if resp.StatusCode >= 400 {
 			return &errors.APIError{HTTPStatusCode: resp.StatusCode}
 		}
+
 		return nil
 	}
 
 	var apiErr errors.APIError
-	if err := json.Unmarshal(body, &apiErr); err != nil {
+	if uerr := json.Unmarshal(body, &apiErr); uerr != nil {
 		// If it's not JSON, only return error if StatusCode >= 400
 		if resp.StatusCode >= 400 {
 			return &errors.APIError{HTTPStatusCode: resp.StatusCode, Message: string(body)}
 		}
+
 		return nil
 	}
 
@@ -52,11 +55,12 @@ func ValidateResponse(resp *http.Response) error {
 
 	// Check for business error in 200 OK
 	// Some Payoneer APIs return 200 OK even if the operation failed.
-	// We look for status != "Success" or presence of error_code.
-	if apiErr.Status != "" && !strings.EqualFold(apiErr.Status, "Success") {
+	// We look for status == "Failure" or presence of error_code.
+	if apiErr.Code != "" {
 		return &apiErr
 	}
-	if apiErr.Code != "" {
+
+	if strings.EqualFold(apiErr.Status, "Failure") {
 		return &apiErr
 	}
 

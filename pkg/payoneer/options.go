@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/pablocrivella/go-payoneer/internal/auth"
-	"github.com/pablocrivella/go-payoneer/internal/transport"
+	"github.com/pcriv/go-payoneer/internal/auth"
+	"github.com/pcriv/go-payoneer/internal/transport"
 )
 
 // Option is a functional option for configuring the Client.

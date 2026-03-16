@@ -18,6 +18,7 @@ type PayoutItem struct {
 // MarshalJSON implements the json.Marshaler interface for PayoutItem.
 func (p PayoutItem) MarshalJSON() ([]byte, error) {
 	type Alias PayoutItem
+
 	return json.Marshal(&struct {
 		Amount float64 `json:"amount"`
 		Alias
@@ -40,6 +41,7 @@ func (p *PayoutItem) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	p.Amount = int64(aux.Amount * 100)
+
 	return nil
 }
 
@@ -64,6 +66,7 @@ func (r *MassPayoutRequest) Validate() error {
 			return fmt.Errorf("payment %d: amount must be greater than zero", i)
 		}
 	}
+
 	return nil
 }
 
@@ -73,4 +76,13 @@ type PayoutBatchResult struct {
 	Status      string           `json:"status"`
 	Reason      Optional[string] `json:"reason,omitempty"`
 	ReleaseDate Optional[string] `json:"release_date,omitempty"`
+}
+
+// PayoutStatusResult represents the status of a single payout.
+type PayoutStatusResult struct {
+	PayoutID          string           `json:"payout_id"`
+	ClientReferenceID string           `json:"client_reference_id"`
+	Status            string           `json:"status"`
+	Reason            Optional[string] `json:"reason,omitempty"`
+	ReleaseDate       Optional[string] `json:"release_date,omitempty"`
 }

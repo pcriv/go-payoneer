@@ -10,3 +10,6 @@ type AccountsService service
 
 // PayoutsService handles operations related to Payoneer payouts.
 type PayoutsService service
+
+// PayeesService handles operations related to Payoneer payees.
+type PayeesService service

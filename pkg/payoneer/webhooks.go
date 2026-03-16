@@ -1,6 +1,7 @@
 package payoneer
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -28,6 +29,7 @@ func ValidateSignature(payload []byte, signature string, secret string) bool {
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write(payload)
 	expectedSignature := hex.EncodeToString(h.Sum(nil))
+
 	return hmac.Equal([]byte(signature), []byte(expectedSignature))
 }
 
@@ -42,16 +44,50 @@ func ParseWebhook(r *http.Request, secret string) (*WebhookEvent, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer r.Body.Close()
+	_ = r.Body.Close()
 
 	if !ValidateSignature(body, signature, secret) {
 		return nil, errors.New("invalid signature")
 	}
 
 	var event WebhookEvent
-	if err := json.Unmarshal(body, &event); err != nil {
-		return nil, err
+	if uerr := json.Unmarshal(body, &event); uerr != nil {
+		return nil, uerr
 	}
 
 	return &event, nil
+}
+
+// WebhookValidator returns an HTTP middleware that validates the Payoneer signature.
+// If validation fails, it returns 401 Unauthorized.
+// If validation succeeds, it replaces r.Body with a new reader so it can be read again.
+func WebhookValidator(secret string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			signature := r.Header.Get(HeaderPayoneerSignature)
+			if signature == "" {
+				http.Error(w, "missing signature", http.StatusUnauthorized)
+
+				return
+			}
+
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "failed to read body", http.StatusInternalServerError)
+
+				return
+			}
+			_ = r.Body.Close()
+
+			if !ValidateSignature(body, signature, secret) {
+				http.Error(w, "invalid signature", http.StatusUnauthorized)
+
+				return
+			}
+
+			// Restore body for next handler
+			r.Body = io.NopCloser(bytes.NewReader(body))
+			next.ServeHTTP(w, r)
+		})
+	}
 }

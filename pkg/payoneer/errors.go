@@ -1,7 +1,7 @@
 package payoneer
 
 import (
-	"github.com/pablocrivella/go-payoneer/pkg/payoneer/errors"
+	"github.com/pcriv/go-payoneer/pkg/payoneer/errors"
 )
 
 // APIError represents an error returned by the Payoneer API.
