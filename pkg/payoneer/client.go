@@ -222,7 +222,7 @@ func (c *Client) Do(req *http.Request, v any) error {
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	if verr := transport.ValidateResponse(resp); verr != nil {
+	if verr := validateResponse(resp); verr != nil {
 		return verr
 	}
 

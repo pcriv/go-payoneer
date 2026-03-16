@@ -11,8 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	payoneererrors "github.com/pcriv/go-payoneer/pkg/payoneer/errors"
 )
 
 func TestPayoutsService_CreateMassPayout(t *testing.T) {
@@ -137,9 +135,9 @@ func TestPayoutErrorHandling(t *testing.T) {
 		_, err := client.Payouts.GetPayoutStatus(context.Background(), "ref-404")
 		require.Error(t, err)
 
-		var apiErr *payoneererrors.APIError
+		var apiErr *APIError
 		if errors.As(err, &apiErr) {
-			assert.Equal(t, payoneererrors.ErrCodePayoutNotFound, apiErr.Code)
+			assert.Equal(t, ErrCodePayoutNotFound, apiErr.Code)
 			assert.Equal(t, http.StatusNotFound, apiErr.HTTPStatusCode)
 		} else {
 			t.Errorf("expected APIError, got %T", err)

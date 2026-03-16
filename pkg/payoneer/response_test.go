@@ -1,4 +1,4 @@
-package transport_test
+package payoneer
 
 import (
 	"bytes"
@@ -6,9 +6,6 @@ import (
 	"io"
 	"net/http"
 	"testing"
-
-	"github.com/pcriv/go-payoneer/internal/transport"
-	payoneererrors "github.com/pcriv/go-payoneer/pkg/payoneer/errors"
 )
 
 func TestValidateResponse(t *testing.T) {
@@ -19,7 +16,7 @@ func TestValidateResponse(t *testing.T) {
 			Body:       io.NopCloser(bytes.NewBufferString(body)),
 		}
 
-		err := transport.ValidateResponse(resp)
+		err := validateResponse(resp)
 		if err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
@@ -38,12 +35,12 @@ func TestValidateResponse(t *testing.T) {
 			Body:       io.NopCloser(bytes.NewBufferString(body)),
 		}
 
-		err := transport.ValidateResponse(resp)
+		err := validateResponse(resp)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
 
-		var apiErr *payoneererrors.APIError
+		var apiErr *APIError
 		if !errors.As(err, &apiErr) {
 			t.Fatalf("expected APIError, got %T", err)
 		}
@@ -61,12 +58,12 @@ func TestValidateResponse(t *testing.T) {
 			Body:       io.NopCloser(bytes.NewBufferString(body)),
 		}
 
-		err := transport.ValidateResponse(resp)
+		err := validateResponse(resp)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
 
-		var apiErr *payoneererrors.APIError
+		var apiErr *APIError
 		if !errors.As(err, &apiErr) {
 			t.Fatalf("expected APIError, got %T", err)
 		}
@@ -87,7 +84,7 @@ func TestValidateResponse(t *testing.T) {
 			Body:       io.NopCloser(bytes.NewBufferString(body)),
 		}
 
-		err := transport.ValidateResponse(resp)
+		err := validateResponse(resp)
 		if err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}

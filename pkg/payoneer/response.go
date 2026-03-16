@@ -1,4 +1,4 @@
-package transport
+package payoneer
 
 import (
 	"bytes"
@@ -6,16 +6,14 @@ import (
 	"io"
 	"net/http"
 	"strings"
-
-	"github.com/pcriv/go-payoneer/pkg/payoneer/errors"
 )
 
-// ValidateResponse checks the HTTP response for errors.
+// validateResponse checks the HTTP response for errors.
 // It handles both non-2xx status codes and business errors in 2xx responses.
-func ValidateResponse(resp *http.Response) error {
+func validateResponse(resp *http.Response) error {
 	if resp.Body == nil {
 		if resp.StatusCode >= 400 {
-			return &errors.APIError{HTTPStatusCode: resp.StatusCode}
+			return &APIError{HTTPStatusCode: resp.StatusCode}
 		}
 
 		return nil
@@ -30,17 +28,17 @@ func ValidateResponse(resp *http.Response) error {
 
 	if len(body) == 0 {
 		if resp.StatusCode >= 400 {
-			return &errors.APIError{HTTPStatusCode: resp.StatusCode}
+			return &APIError{HTTPStatusCode: resp.StatusCode}
 		}
 
 		return nil
 	}
 
-	var apiErr errors.APIError
+	var apiErr APIError
 	if uerr := json.Unmarshal(body, &apiErr); uerr != nil {
 		// If it's not JSON, only return error if StatusCode >= 400
 		if resp.StatusCode >= 400 {
-			return &errors.APIError{HTTPStatusCode: resp.StatusCode, Message: string(body)}
+			return &APIError{HTTPStatusCode: resp.StatusCode, Message: string(body)}
 		}
 
 		return nil
