@@ -16,7 +16,7 @@ func TestPayeesService(t *testing.T) {
 	client := NewClient(WithBaseURL(server.URL))
 	client.ProgramID = "123"
 
-	t.Run("RegistrationURL", func(t *testing.T) {
+	t.Run("CreateRegistrationURL", func(t *testing.T) {
 		mux.HandleFunc("/v4/programs/123/payees/registration-link", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
 				t.Errorf("got method %s, want POST", r.Method)
@@ -37,9 +37,9 @@ func TestPayeesService(t *testing.T) {
 			})
 		})
 
-		link, err := client.Payees.RegistrationURL(context.Background(), "payee1", WithLanguage("en"))
+		link, err := client.Payees.CreateRegistrationURL(context.Background(), "payee1", WithLanguage("en"))
 		if err != nil {
-			t.Fatalf("RegistrationURL failed: %v", err)
+			t.Fatalf("CreateRegistrationURL failed: %v", err)
 		}
 
 		if link != "https://payoneer.com/reg/123" {
