@@ -17,6 +17,8 @@ var (
 	ErrPayeeIDRequired = errors.New("payee_id is required")
 	// ErrClientReferenceIDRequired is returned when clientReferenceID is empty.
 	ErrClientReferenceIDRequired = errors.New("client_reference_id is required")
+	// ErrAuthenticationFailed is returned when the OAuth2 authentication flow fails.
+	ErrAuthenticationFailed = errors.New("authentication failed")
 )
 
 // APIError represents an error returned by the Payoneer API.

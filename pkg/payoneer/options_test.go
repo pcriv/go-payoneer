@@ -10,7 +10,10 @@ import (
 func TestWithSandbox(t *testing.T) {
 	c := NewClient(WithSandbox())
 	if c.BaseURL != SandboxBaseURL {
-		t.Errorf("got %s, want %s", c.BaseURL, SandboxBaseURL)
+		t.Errorf("BaseURL: got %s, want %s", c.BaseURL, SandboxBaseURL)
+	}
+	if c.AuthBaseURL != SandboxAuthBaseURL {
+		t.Errorf("AuthBaseURL: got %s, want %s", c.AuthBaseURL, SandboxAuthBaseURL)
 	}
 }
 
