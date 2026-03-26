@@ -19,7 +19,12 @@ func Endpoints(baseURL string) oauth2.Endpoint {
 
 // NewClientCredentialsClient returns an http.Client authenticated via Client Credentials flow.
 // It eagerly fetches an initial token to validate the credentials.
-func NewClientCredentialsClient(ctx context.Context, baseURL, clientID, clientSecret string, scopes []string, store TokenStore) (*http.Client, error) {
+func NewClientCredentialsClient(
+	ctx context.Context,
+	baseURL, clientID, clientSecret string,
+	scopes []string,
+	store TokenStore,
+) (*http.Client, error) {
 	config := &clientcredentials.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
@@ -46,7 +51,12 @@ func NewClientCredentialsClient(ctx context.Context, baseURL, clientID, clientSe
 }
 
 // NewAuthCodeClient returns an http.Client authenticated via Authorization Code flow.
-func NewAuthCodeClient(ctx context.Context, baseURL, clientID, clientSecret, code, redirectURL string, scopes []string, store TokenStore) (*http.Client, error) {
+func NewAuthCodeClient(
+	ctx context.Context,
+	baseURL, clientID, clientSecret, code, redirectURL string,
+	scopes []string,
+	store TokenStore,
+) (*http.Client, error) {
 	config := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
