@@ -20,7 +20,6 @@ jobs:
             echo "::error::Tag '$TAG' does not match semver format (v<major>.<minor>.<patch>[-prerelease])"
             exit 1
           fi
-          echo "TAG=$TAG" >> "$GITHUB_ENV"
           echo "Valid semver tag: $TAG"
 
   test:
@@ -85,4 +84,4 @@ jobs:
           if [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]]; then
             FLAGS="$FLAGS --prerelease"
           fi
-          gh release create "$TAG" $FLAGS
+          gh release create "$TAG" $FLAGS --verify-tag
