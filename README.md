@@ -9,7 +9,7 @@ A high-quality, type-safe, and observable Go SDK for the Payoneer API.
 ## Features
 
 - **Full Service Coverage**: Accounts, Payouts, Webhooks, and Payee Management.
-- **Robust Authentication**: Secure OAuth 2.0 implementation with automatic token refreshing.
+- **Robust Authentication**: Secure OAuth 2.0 with eager credential validation and automatic token refreshing.
 - **Observability**: First-class support for `slog` structured logging and OpenTelemetry (Tracing/Metrics).
 - **Resiliency**: Built-in exponential backoff retries and rate-limit handling (429s).
 - **Type-Safety**: Clean Go structs for all API resources, using generics for optional/nullable fields.
@@ -40,11 +40,17 @@ client := payoneer.NewClient(
 
 ### 2. Authenticate
 
+`Authenticate` eagerly fetches a token to validate your credentials. If the credentials or token endpoint are invalid, it fails immediately with a clear error.
+
 ```go
 ctx := context.Background()
 
-// Triggers the configured OAuth 2.0 flow (Client Credentials in this example)
 err := client.Authenticate(ctx)
+if err != nil {
+    // errors.Is(err, payoneer.ErrAuthenticationFailed) can be used
+    // to programmatically detect auth failures.
+    log.Fatal(err)
+}
 ```
 
 ## Usage Examples
@@ -104,6 +110,21 @@ mux.Handle("/webhooks", payoneer.WebhookValidator(secret)(
 link, err := client.Payees.CreateRegistrationURL(ctx, "payee-789",
     payoneer.WithRedirectURL("https://myapp.com/onboarded"),
     payoneer.WithLanguage("en"),
+)
+```
+
+## Configuration
+
+### Environments
+
+`WithSandbox()` configures both the API base URL (`api.sandbox.payoneer.com`) and the OAuth2 base URL (`login.sandbox.payoneer.com`) in one call. For production, the defaults point to `api.payoneer.com` and `login.payoneer.com` respectively.
+
+You can override them independently if needed:
+
+```go
+client := payoneer.NewClient(
+    payoneer.WithBaseURL("https://api.payoneer.com"),
+    payoneer.WithAuthBaseURL("https://login.payoneer.com"),
 )
 ```
 

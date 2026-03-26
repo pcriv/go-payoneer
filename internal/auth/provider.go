@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"golang.org/x/oauth2"
@@ -17,31 +18,41 @@ func Endpoints(baseURL string) oauth2.Endpoint {
 }
 
 // NewClientCredentialsClient returns an http.Client authenticated via Client Credentials flow.
-func NewClientCredentialsClient(ctx context.Context, baseURL, clientID, clientSecret string, store TokenStore) *http.Client {
+// It eagerly fetches an initial token to validate the credentials.
+func NewClientCredentialsClient(ctx context.Context, baseURL, clientID, clientSecret string, scopes []string, store TokenStore) (*http.Client, error) {
 	config := &clientcredentials.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		TokenURL:     Endpoints(baseURL).TokenURL,
+		Scopes:       scopes,
 	}
 
 	ts := config.TokenSource(ctx)
+
+	token, err := ts.Token()
+	if err != nil {
+		return nil, fmt.Errorf("failed to obtain token from %s: %w", config.TokenURL, err)
+	}
+
 	if store != nil {
+		store.Set(token)
 		ts = &storedTokenSource{
 			inner: ts,
 			store: store,
 		}
 	}
 
-	return oauth2.NewClient(ctx, ts)
+	return oauth2.NewClient(ctx, ts), nil
 }
 
 // NewAuthCodeClient returns an http.Client authenticated via Authorization Code flow.
-func NewAuthCodeClient(ctx context.Context, baseURL, clientID, clientSecret, code, redirectURL string, store TokenStore) (*http.Client, error) {
+func NewAuthCodeClient(ctx context.Context, baseURL, clientID, clientSecret, code, redirectURL string, scopes []string, store TokenStore) (*http.Client, error) {
 	config := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Endpoint:     Endpoints(baseURL),
 		RedirectURL:  redirectURL,
+		Scopes:       scopes,
 	}
 
 	var token *oauth2.Token

@@ -54,9 +54,19 @@ func WithLogger(logger *slog.Logger) Option {
 	}
 }
 
+// WithAuthBaseURL sets the base URL for the Payoneer OAuth2 endpoints.
+func WithAuthBaseURL(url string) Option {
+	return func(c *Client) {
+		c.AuthBaseURL = url
+	}
+}
+
 // WithSandbox configures the client to use the Payoneer sandbox environment.
 func WithSandbox() Option {
-	return WithBaseURL(SandboxBaseURL)
+	return func(c *Client) {
+		c.BaseURL = SandboxBaseURL
+		c.AuthBaseURL = SandboxAuthBaseURL
+	}
 }
 
 // WithRetries sets the maximum number of retries for failed requests.
@@ -88,11 +98,18 @@ func WithMeterProvider(mp metric.MeterProvider) Option {
 	}
 }
 
+// WithScopes sets the OAuth 2.0 scopes to request during authentication.
+func WithScopes(scopes ...string) Option {
+	return func(c *Client) {
+		c.scopes = scopes
+	}
+}
+
 // WithClientCredentials configures the client to use OAuth 2.0 Client Credentials flow.
 func WithClientCredentials(clientID, clientSecret string) Option {
 	return func(c *Client) {
 		c.authFn = func(ctx context.Context, c *Client) (*http.Client, error) {
-			return auth.NewClientCredentialsClient(ctx, c.BaseURL, clientID, clientSecret, c.tokenStore), nil
+			return auth.NewClientCredentialsClient(ctx, c.AuthBaseURL, clientID, clientSecret, c.scopes, c.tokenStore)
 		}
 	}
 }
@@ -101,7 +118,7 @@ func WithClientCredentials(clientID, clientSecret string) Option {
 func WithAuthCode(clientID, clientSecret, code, redirectURL string) Option {
 	return func(c *Client) {
 		c.authFn = func(ctx context.Context, c *Client) (*http.Client, error) {
-			return auth.NewAuthCodeClient(ctx, c.BaseURL, clientID, clientSecret, code, redirectURL, c.tokenStore)
+			return auth.NewAuthCodeClient(ctx, c.AuthBaseURL, clientID, clientSecret, code, redirectURL, c.scopes, c.tokenStore)
 		}
 	}
 }

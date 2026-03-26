@@ -17,6 +17,9 @@ func TestNewClient(t *testing.T) {
 		if client.BaseURL != "https://api.payoneer.com" {
 			t.Errorf("expected default BaseURL to be https://api.payoneer.com, got %s", client.BaseURL)
 		}
+		if client.AuthBaseURL != "https://login.payoneer.com" {
+			t.Errorf("expected default AuthBaseURL to be https://login.payoneer.com, got %s", client.AuthBaseURL)
+		}
 	})
 
 	t.Run("Custom BaseURL", func(t *testing.T) {

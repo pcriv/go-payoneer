@@ -26,16 +26,22 @@ const (
 	DefaultBaseURL = "https://api.payoneer.com"
 	// SandboxBaseURL is the sandbox Payoneer API URL.
 	SandboxBaseURL = "https://api.sandbox.payoneer.com"
+	// DefaultAuthBaseURL is the production Payoneer OAuth2 URL.
+	DefaultAuthBaseURL = "https://login.payoneer.com"
+	// SandboxAuthBaseURL is the sandbox Payoneer OAuth2 URL.
+	SandboxAuthBaseURL = "https://login.sandbox.payoneer.com"
 )
 
 // Client is the main SDK client for communicating with the Payoneer API.
 type Client struct {
-	BaseURL    string
-	HTTPClient *http.Client
-	Logger     *slog.Logger
+	BaseURL     string
+	AuthBaseURL string
+	HTTPClient  *http.Client
+	Logger      *slog.Logger
 
 	tokenStore auth.TokenStore
 	authFn     func(ctx context.Context, c *Client) (*http.Client, error)
+	scopes     []string
 
 	// Retry configuration
 	retryMax     int
@@ -134,7 +140,8 @@ func (c *Client) wrapTransport(httpClient *http.Client) *http.Client {
 // NewClient returns a new Payoneer Client with the provided options.
 func NewClient(opts ...Option) *Client {
 	c := &Client{
-		BaseURL: DefaultBaseURL,
+		BaseURL:     DefaultBaseURL,
+		AuthBaseURL: DefaultAuthBaseURL,
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -169,7 +176,7 @@ func (c *Client) Authenticate(ctx context.Context) error {
 
 	httpClient, err := c.authFn(ctx, c)
 	if err != nil {
-		return fmt.Errorf("authentication failed: %w", err)
+		return fmt.Errorf("%w: %w", ErrAuthenticationFailed, err)
 	}
 
 	// Preserve timeout and wrap the new client's transport.

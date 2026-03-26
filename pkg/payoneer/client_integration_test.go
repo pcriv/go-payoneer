@@ -52,6 +52,7 @@ func TestClient_Integration(t *testing.T) {
 	ctx := context.Background()
 	client := payoneer.NewClient(
 		payoneer.WithBaseURL(server.URL),
+		payoneer.WithAuthBaseURL(server.URL),
 		payoneer.WithClientCredentials("client_id", "client_secret"),
 	)
 
@@ -76,6 +77,28 @@ func TestClient_Integration(t *testing.T) {
 
 	if result["status"] != "Success" {
 		t.Errorf("expected Success status, got %v", result["status"])
+	}
+}
+
+func TestClient_AuthenticateFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `<html>Error page</html>`)
+	}))
+	defer server.Close()
+
+	client := payoneer.NewClient(
+		payoneer.WithAuthBaseURL(server.URL),
+		payoneer.WithClientCredentials("bad_id", "bad_secret"),
+	)
+
+	err := client.Authenticate(context.Background())
+	if err == nil {
+		t.Fatal("expected Authenticate() to fail with invalid credentials")
+	}
+
+	if !errors.Is(err, payoneer.ErrAuthenticationFailed) {
+		t.Errorf("expected ErrAuthenticationFailed, got: %v", err)
 	}
 }
 
