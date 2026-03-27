@@ -40,8 +40,8 @@ func TestValidateResponse(t *testing.T) {
 			t.Fatal("expected error, got nil")
 		}
 
-		var apiErr *APIError
-		if !errors.As(err, &apiErr) {
+		apiErr, ok := errors.AsType[*APIError](err)
+		if !ok {
 			t.Fatalf("expected APIError, got %T", err)
 		}
 
@@ -63,8 +63,8 @@ func TestValidateResponse(t *testing.T) {
 			t.Fatal("expected error, got nil")
 		}
 
-		var apiErr *APIError
-		if !errors.As(err, &apiErr) {
+		apiErr, ok := errors.AsType[*APIError](err)
+		if !ok {
 			t.Fatalf("expected APIError, got %T", err)
 		}
 
