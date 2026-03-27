@@ -121,8 +121,8 @@ func TestClient_ErrorHandling(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var apiErr *payoneer.APIError
-	if !errors.As(err, &apiErr) {
+	apiErr, ok := errors.AsType[*payoneer.APIError](err)
+	if !ok {
 		t.Fatalf("expected APIError, got %T", err)
 	}
 

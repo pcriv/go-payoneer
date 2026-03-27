@@ -135,12 +135,10 @@ func TestPayoutErrorHandling(t *testing.T) {
 		_, err := client.Payouts.GetPayoutStatus(context.Background(), "ref-404")
 		require.Error(t, err)
 
-		var apiErr *APIError
-		if errors.As(err, &apiErr) {
+		apiErr, ok := errors.AsType[*APIError](err)
+		if assert.True(t, ok, "expected APIError, got %T", err) {
 			assert.Equal(t, ErrCodePayoutNotFound, apiErr.Code)
 			assert.Equal(t, http.StatusNotFound, apiErr.HTTPStatusCode)
-		} else {
-			t.Errorf("expected APIError, got %T", err)
 		}
 	})
 
