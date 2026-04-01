@@ -105,9 +105,12 @@ func TestClient_ErrorHandling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"error_code":  "ERR_123",
-			"description": "Custom error message",
-			"status":      "Failure",
+			"error":             "Bad Request",
+			"error_description": "Custom error message",
+			"error_details": map[string]any{
+				"code":     400,
+				"sub_code": 1000,
+			},
 		})
 	}))
 	defer server.Close()
@@ -125,7 +128,11 @@ func TestClient_ErrorHandling(t *testing.T) {
 		t.Fatalf("expected APIError, got %T", err)
 	}
 
-	if apiErr.Code != "ERR_123" {
-		t.Errorf("expected code ERR_123, got %s", apiErr.Code)
+	if apiErr.ErrorType != "Bad Request" {
+		t.Errorf("expected error 'Bad Request', got %q", apiErr.ErrorType)
+	}
+
+	if apiErr.SubCode() != 1000 {
+		t.Errorf("expected sub_code 1000, got %d", apiErr.SubCode())
 	}
 }

@@ -179,7 +179,7 @@ func TestPayoutErrorHandling(t *testing.T) {
 	t.Run("404 Payout Not Found (2306)", func(t *testing.T) {
 		mux.HandleFunc("/v4/programs/12345/payouts/ref-404/status", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, `{"error_code":"2306","description":"Payout not found","status":"Failure"}`)
+			fmt.Fprint(w, `{"error":"Not Found","error_description":"Payout not found","error_details":{"code":404,"sub_code":2306}}`)
 		})
 
 		_, err := client.Payouts.GetStatus(context.Background(), "ref-404")
@@ -187,7 +187,7 @@ func TestPayoutErrorHandling(t *testing.T) {
 
 		apiErr, ok := errors.AsType[*APIError](err)
 		if assert.True(t, ok, "expected APIError, got %T", err) {
-			assert.Equal(t, ErrCodePayoutNotFound, apiErr.Code)
+			assert.Equal(t, ErrSubCodePayoutNotFound, apiErr.SubCode())
 			assert.Equal(t, http.StatusNotFound, apiErr.HTTPStatusCode)
 		}
 	})
@@ -195,7 +195,7 @@ func TestPayoutErrorHandling(t *testing.T) {
 	t.Run("400 Validation Error", func(t *testing.T) {
 		mux.HandleFunc("/v4/programs/12345/masspayouts", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprint(w, `{"error_code":"400","description":"Invalid payout data"}`)
+			fmt.Fprint(w, `{"error":"Bad Request","error_description":"Invalid payout data","error_details":{"code":400,"sub_code":1000}}`)
 		})
 
 		req := &MassPayoutRequest{

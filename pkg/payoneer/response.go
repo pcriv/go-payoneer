@@ -38,7 +38,7 @@ func validateResponse(resp *http.Response) error {
 	if uerr := json.Unmarshal(body, &apiErr); uerr != nil {
 		// If it's not JSON, only return error if StatusCode >= 400
 		if resp.StatusCode >= 400 {
-			return &APIError{HTTPStatusCode: resp.StatusCode, Message: string(body)}
+			return &APIError{HTTPStatusCode: resp.StatusCode, ErrorType: string(body)}
 		}
 
 		return nil
@@ -51,10 +51,9 @@ func validateResponse(resp *http.Response) error {
 		return &apiErr
 	}
 
-	// Check for business error in 200 OK
+	// Check for business error in 200 OK.
 	// Some Payoneer APIs return 200 OK even if the operation failed.
-	// We look for status == "Failure" or presence of error_code.
-	if apiErr.Code != "" {
+	if apiErr.ErrorType != "" {
 		return &apiErr
 	}
 
