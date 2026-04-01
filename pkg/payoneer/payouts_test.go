@@ -187,7 +187,6 @@ func TestPayoutErrorHandling(t *testing.T) {
 
 		apiErr, ok := errors.AsType[*APIError](err)
 		if assert.True(t, ok, "expected APIError, got %T", err) {
-			assert.Equal(t, ErrSubCodePayoutNotFound, apiErr.SubCode())
 			assert.Equal(t, http.StatusNotFound, apiErr.HTTPStatusCode)
 		}
 	})

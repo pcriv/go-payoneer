@@ -54,11 +54,6 @@ type ErrorDetail struct {
 	SubCode *int   `json:"sub_code,omitempty"`
 }
 
-const (
-	// ErrSubCodePayoutNotFound is the Payoneer sub_code for payout not found.
-	ErrSubCodePayoutNotFound = 2306
-)
-
 func (e *APIError) Error() string {
 	var parts []string
 
