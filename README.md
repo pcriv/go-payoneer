@@ -70,7 +70,7 @@ request := &payoneer.MassPayoutRequest{
     },
 }
 
-result, err := client.Payouts.CreateMassPayout(ctx, request)
+result, err := client.Payouts.SubmitMany(ctx, request)
 // result.Result — e.g. "Payments Created"
 ```
 

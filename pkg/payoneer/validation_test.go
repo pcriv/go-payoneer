@@ -43,15 +43,15 @@ func TestPayeesService_Validation(t *testing.T) {
 func TestPayoutsService_ClientReferenceIDValidation(t *testing.T) {
 	client := NewClient(WithProgramID("prog1"))
 
-	t.Run("GetPayoutStatus requires clientReferenceID", func(t *testing.T) {
-		_, err := client.Payouts.GetPayoutStatus(context.Background(), "")
+	t.Run("GetStatus requires clientReferenceID", func(t *testing.T) {
+		_, err := client.Payouts.GetStatus(context.Background(), "")
 		if !errors.Is(err, ErrClientReferenceIDRequired) {
 			t.Errorf("got %v, want ErrClientReferenceIDRequired", err)
 		}
 	})
 
-	t.Run("CancelPayout requires clientReferenceID", func(t *testing.T) {
-		_, err := client.Payouts.CancelPayout(context.Background(), "")
+	t.Run("Cancel requires clientReferenceID", func(t *testing.T) {
+		_, err := client.Payouts.Cancel(context.Background(), "")
 		if !errors.Is(err, ErrClientReferenceIDRequired) {
 			t.Errorf("got %v, want ErrClientReferenceIDRequired", err)
 		}

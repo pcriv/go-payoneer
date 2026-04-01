@@ -10,9 +10,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// CreateMassPayout submits a batch of payout requests.
+// SubmitMany submits a batch of payout requests.
 // On success the API returns HTTP 201 with {"result": "Payments Created"}.
-func (s *PayoutsService) CreateMassPayout(ctx context.Context, req *MassPayoutRequest) (*MassPayoutResult, error) {
+func (s *PayoutsService) SubmitMany(ctx context.Context, req *MassPayoutRequest) (*MassPayoutResult, error) {
 	if s.client.ProgramID == "" {
 		return nil, ErrProgramIDRequired
 	}
@@ -44,8 +44,8 @@ func (s *PayoutsService) CreateMassPayout(ctx context.Context, req *MassPayoutRe
 	return &resp, nil
 }
 
-// GetPayoutStatus retrieves the status of a specific payout.
-func (s *PayoutsService) GetPayoutStatus(ctx context.Context, clientReferenceID string) (*PayoutStatusResult, error) {
+// GetStatus retrieves the status of a specific payout.
+func (s *PayoutsService) GetStatus(ctx context.Context, clientReferenceID string) (*PayoutStatusResult, error) {
 	if s.client.ProgramID == "" {
 		return nil, ErrProgramIDRequired
 	}
@@ -76,8 +76,8 @@ func (s *PayoutsService) GetPayoutStatus(ctx context.Context, clientReferenceID 
 	return &resp.Result, nil
 }
 
-// CancelPayout cancels a pending payout.
-func (s *PayoutsService) CancelPayout(ctx context.Context, clientReferenceID string) (*CancelPayoutResult, error) {
+// Cancel cancels a pending payout.
+func (s *PayoutsService) Cancel(ctx context.Context, clientReferenceID string) (*CancelResult, error) {
 	if s.client.ProgramID == "" {
 		return nil, ErrProgramIDRequired
 	}
@@ -99,7 +99,7 @@ func (s *PayoutsService) CancelPayout(ctx context.Context, clientReferenceID str
 		return nil, err
 	}
 
-	var resp apiResult[CancelPayoutResult]
+	var resp apiResult[CancelResult]
 	err = s.client.Do(httpReq, &resp)
 	if err != nil {
 		return nil, err

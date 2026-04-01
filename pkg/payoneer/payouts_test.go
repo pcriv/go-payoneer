@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPayoutsService_CreateMassPayout(t *testing.T) {
+func TestPayoutsService_SubmitMany(t *testing.T) {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -52,13 +52,13 @@ func TestPayoutsService_CreateMassPayout(t *testing.T) {
 		},
 	}
 
-	result, err := client.Payouts.CreateMassPayout(context.Background(), req)
+	result, err := client.Payouts.SubmitMany(context.Background(), req)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "Payments Created", result.Result)
 }
 
-func TestPayoutsService_GetPayoutStatus(t *testing.T) {
+func TestPayoutsService_GetStatus(t *testing.T) {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -78,7 +78,7 @@ func TestPayoutsService_GetPayoutStatus(t *testing.T) {
 		)
 	})
 
-	result, err := client.Payouts.GetPayoutStatus(context.Background(), "ref-1")
+	result, err := client.Payouts.GetStatus(context.Background(), "ref-1")
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "Transferred", result.Status)
@@ -96,7 +96,7 @@ func TestPayoutsService_GetPayoutStatus(t *testing.T) {
 	assert.Equal(t, "USD", currency)
 }
 
-func TestPayoutsService_GetPayoutStatus_Cancelled(t *testing.T) {
+func TestPayoutsService_GetStatus_Cancelled(t *testing.T) {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -114,7 +114,7 @@ func TestPayoutsService_GetPayoutStatus_Cancelled(t *testing.T) {
 		)
 	})
 
-	result, err := client.Payouts.GetPayoutStatus(context.Background(), "ref-cancelled")
+	result, err := client.Payouts.GetStatus(context.Background(), "ref-cancelled")
 	require.NoError(t, err)
 	assert.Equal(t, "Cancelled", result.Status)
 
@@ -127,7 +127,7 @@ func TestPayoutsService_GetPayoutStatus_Cancelled(t *testing.T) {
 	assert.Equal(t, "Bank details - Invalid Branch Code", desc)
 }
 
-func TestPayoutsService_CancelPayout(t *testing.T) {
+func TestPayoutsService_Cancel(t *testing.T) {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -143,7 +143,7 @@ func TestPayoutsService_CancelPayout(t *testing.T) {
 		fmt.Fprint(w, `{"result":{"description":"The request was received successfully. The cancel action has not yet been performed."}}`)
 	})
 
-	result, err := client.Payouts.CancelPayout(context.Background(), "ref-1")
+	result, err := client.Payouts.Cancel(context.Background(), "ref-1")
 	require.NoError(t, err)
 	assert.Equal(t, "The request was received successfully. The cancel action has not yet been performed.", result.Description)
 }
@@ -151,17 +151,17 @@ func TestPayoutsService_CancelPayout(t *testing.T) {
 func TestPayoutsService_ProgramIDRequired(t *testing.T) {
 	client := NewClient()
 
-	_, err := client.Payouts.CreateMassPayout(context.Background(), &MassPayoutRequest{
+	_, err := client.Payouts.SubmitMany(context.Background(), &MassPayoutRequest{
 		Payments: []PayoutItem{{ClientReferenceID: "ref-1", PayeeID: "p1", Amount: 100, Currency: "USD", Description: "test"}},
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "program_id is required")
 
-	_, err = client.Payouts.GetPayoutStatus(context.Background(), "ref-1")
+	_, err = client.Payouts.GetStatus(context.Background(), "ref-1")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "program_id is required")
 
-	_, err = client.Payouts.CancelPayout(context.Background(), "ref-1")
+	_, err = client.Payouts.Cancel(context.Background(), "ref-1")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "program_id is required")
 }
@@ -182,7 +182,7 @@ func TestPayoutErrorHandling(t *testing.T) {
 			fmt.Fprint(w, `{"error_code":"2306","description":"Payout not found","status":"Failure"}`)
 		})
 
-		_, err := client.Payouts.GetPayoutStatus(context.Background(), "ref-404")
+		_, err := client.Payouts.GetStatus(context.Background(), "ref-404")
 		require.Error(t, err)
 
 		apiErr, ok := errors.AsType[*APIError](err)
@@ -201,7 +201,7 @@ func TestPayoutErrorHandling(t *testing.T) {
 		req := &MassPayoutRequest{
 			Payments: []PayoutItem{{ClientReferenceID: "ref-1", PayeeID: "p1", Amount: 100, Currency: "USD", Description: "test"}},
 		}
-		_, err := client.Payouts.CreateMassPayout(context.Background(), req)
+		_, err := client.Payouts.SubmitMany(context.Background(), req)
 		require.Error(t, err)
 	})
 }
@@ -211,7 +211,7 @@ func TestPayoutsService_Validation(t *testing.T) {
 
 	t.Run("Empty payments list", func(t *testing.T) {
 		req := &MassPayoutRequest{Payments: []PayoutItem{}}
-		_, err := client.Payouts.CreateMassPayout(context.Background(), req)
+		_, err := client.Payouts.SubmitMany(context.Background(), req)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "at least one payment is required")
 	})
@@ -220,7 +220,7 @@ func TestPayoutsService_Validation(t *testing.T) {
 		req := &MassPayoutRequest{
 			Payments: []PayoutItem{{PayeeID: "p1", Amount: 100, Currency: "USD", Description: "test"}},
 		}
-		_, err := client.Payouts.CreateMassPayout(context.Background(), req)
+		_, err := client.Payouts.SubmitMany(context.Background(), req)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "client_reference_id is required")
 	})
@@ -229,7 +229,7 @@ func TestPayoutsService_Validation(t *testing.T) {
 		req := &MassPayoutRequest{
 			Payments: []PayoutItem{{ClientReferenceID: "ref-1", PayeeID: "p1", Amount: 0, Currency: "USD", Description: "test"}},
 		}
-		_, err := client.Payouts.CreateMassPayout(context.Background(), req)
+		_, err := client.Payouts.SubmitMany(context.Background(), req)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "amount must be greater than zero")
 	})
@@ -238,7 +238,7 @@ func TestPayoutsService_Validation(t *testing.T) {
 		req := &MassPayoutRequest{
 			Payments: []PayoutItem{{ClientReferenceID: "ref-1", PayeeID: "p1", Amount: 100, Currency: "USD"}},
 		}
-		_, err := client.Payouts.CreateMassPayout(context.Background(), req)
+		_, err := client.Payouts.SubmitMany(context.Background(), req)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "description is required")
 	})

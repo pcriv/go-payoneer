@@ -100,7 +100,7 @@ type PayoutStatusResult struct {
 	CancelReasonDescription Optional[string]  `json:"cancel_reason_description"`
 }
 
-// CancelPayoutResult represents the response from cancelling a payout.
-type CancelPayoutResult struct {
+// CancelResult represents the response from cancelling a payout.
+type CancelResult struct {
 	Description string `json:"description"`
 }
