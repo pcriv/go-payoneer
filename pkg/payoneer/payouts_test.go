@@ -72,7 +72,10 @@ func TestPayoutsService_GetPayoutStatus(t *testing.T) {
 		assert.Equal(t, http.MethodGet, r.Method)
 
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"result":{"payout_date":"2021-03-17T10:47:00-04:00","amount":5.10,"currency":"USD","status":"Transferred","payee_id":"payee-1","payout_id":"1636595702","load_date":"2021-03-17T14:09:39-04:00"}}`)
+		fmt.Fprint(
+			w,
+			`{"result":{"payout_date":"2021-03-17T10:47:00-04:00","amount":5.10,"currency":"USD","status":"Transferred","payee_id":"payee-1","payout_id":"1636595702","load_date":"2021-03-17T14:09:39-04:00"}}`,
+		)
 	})
 
 	result, err := client.Payouts.GetPayoutStatus(context.Background(), "ref-1")
@@ -105,7 +108,10 @@ func TestPayoutsService_GetPayoutStatus_Cancelled(t *testing.T) {
 
 	mux.HandleFunc("/v4/programs/12345/payouts/ref-cancelled/status", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"result":{"payout_date":"2021-03-17T10:47:00-04:00","amount":5.10,"currency":"USD","status":"Cancelled","payee_id":"payee-1","payout_id":"123","cancel_reason_code":30013,"cancel_reason_description":"Bank details - Invalid Branch Code"}}`)
+		fmt.Fprint(
+			w,
+			`{"result":{"payout_date":"2021-03-17T10:47:00-04:00","amount":5.10,"currency":"USD","status":"Cancelled","payee_id":"payee-1","payout_id":"123","cancel_reason_code":30013,"cancel_reason_description":"Bank details - Invalid Branch Code"}}`,
+		)
 	})
 
 	result, err := client.Payouts.GetPayoutStatus(context.Background(), "ref-cancelled")

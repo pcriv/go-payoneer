@@ -129,4 +129,3 @@ func TestClient_ErrorHandling(t *testing.T) {
 		t.Errorf("expected code ERR_123, got %s", apiErr.Code)
 	}
 }
-

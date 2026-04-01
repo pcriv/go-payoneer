@@ -31,7 +31,6 @@ func TestWithTokenStore(t *testing.T) {
 	}
 }
 
-
 func TestRegistrationOptions(t *testing.T) {
 	t.Run("WithRedirectURL", func(t *testing.T) {
 		req := &RegistrationLinkRequest{}

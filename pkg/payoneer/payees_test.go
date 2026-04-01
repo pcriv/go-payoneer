@@ -100,6 +100,4 @@ func TestPayeesService(t *testing.T) {
 			t.Errorf("got payout_method %+v, want BANK/USD", status.PayoutMethod)
 		}
 	})
-
 }
-

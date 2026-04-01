@@ -84,20 +84,20 @@ type MassPayoutResult struct {
 
 // PayoutStatusResult represents the status of a single payout.
 type PayoutStatusResult struct {
-	PayoutDate             Optional[string]  `json:"payout_date"`
-	Amount                 Optional[float64] `json:"amount"`
-	Currency               Optional[string]  `json:"currency"`
-	Status                 string            `json:"status"`
-	TargetAmount           Optional[float64] `json:"target_amount"`
-	TargetCurrency         Optional[string]  `json:"target_currency"`
-	PayeeID                Optional[string]  `json:"payee_id"`
-	PayoutID               Optional[string]  `json:"payout_id"`
-	ScheduledPayoutDate    Optional[string]  `json:"scheduled_payout_date"`
-	LoadDate               Optional[string]  `json:"load_date"`
-	ReasonCode             Optional[string]  `json:"reason_code"`
-	ReasonDescription      Optional[string]  `json:"reason_description"`
-	CancelReasonCode       Optional[int]     `json:"cancel_reason_code"`
-	CancelReasonDescription Optional[string] `json:"cancel_reason_description"`
+	PayoutDate              Optional[string]  `json:"payout_date"`
+	Amount                  Optional[float64] `json:"amount"`
+	Currency                Optional[string]  `json:"currency"`
+	Status                  string            `json:"status"`
+	TargetAmount            Optional[float64] `json:"target_amount"`
+	TargetCurrency          Optional[string]  `json:"target_currency"`
+	PayeeID                 Optional[string]  `json:"payee_id"`
+	PayoutID                Optional[string]  `json:"payout_id"`
+	ScheduledPayoutDate     Optional[string]  `json:"scheduled_payout_date"`
+	LoadDate                Optional[string]  `json:"load_date"`
+	ReasonCode              Optional[string]  `json:"reason_code"`
+	ReasonDescription       Optional[string]  `json:"reason_description"`
+	CancelReasonCode        Optional[int]     `json:"cancel_reason_code"`
+	CancelReasonDescription Optional[string]  `json:"cancel_reason_description"`
 }
 
 // CancelPayoutResult represents the response from cancelling a payout.

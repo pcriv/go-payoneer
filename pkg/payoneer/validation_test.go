@@ -38,7 +38,6 @@ func TestPayeesService_Validation(t *testing.T) {
 			t.Errorf("got %v, want ErrProgramIDRequired", err)
 		}
 	})
-
 }
 
 func TestPayoutsService_ClientReferenceIDValidation(t *testing.T) {

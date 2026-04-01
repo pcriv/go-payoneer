@@ -11,10 +11,10 @@ import (
 
 // PayeeStatus represents the registration status of a payee.
 type PayeeStatus struct {
-	AccountID        string              `json:"account_id"`
-	Status           PayeeStatusDetail   `json:"status"`
-	RegistrationDate string              `json:"registration_date"`
-	PayoutMethod     *PayeePayoutMethod  `json:"payout_method,omitempty"`
+	AccountID        string             `json:"account_id"`
+	Status           PayeeStatusDetail  `json:"status"`
+	RegistrationDate string             `json:"registration_date"`
+	PayoutMethod     *PayeePayoutMethod `json:"payout_method,omitempty"`
 }
 
 // PayeeStatusDetail holds the status type code and description.
@@ -31,26 +31,26 @@ type PayeePayoutMethod struct {
 
 // RegistrationLinkRequest is the payload for generating an onboarding link.
 type RegistrationLinkRequest struct {
-	PayeeID              string                    `json:"payee_id"`
-	ClientSessionID      string                    `json:"client_session_id,omitempty"`
-	RedirectURL          string                    `json:"redirect_url,omitempty"`
-	RedirectTime         *int                      `json:"redirect_time,omitempty"`
-	PayoutMethods        []string                  `json:"payout_methods,omitempty"`
-	LockType             string                    `json:"lock_type,omitempty"`
-	PayeeDataMatchingType string                   `json:"payee_data_matching_type,omitempty"`
-	AlreadyHaveAnAccount string                    `json:"already_have_an_account,omitempty"`
-	Payee                *RegistrationPayee        `json:"payee,omitempty"`
-	LanguageID           string                    `json:"language_id,omitempty"`
-	PayoutMethod         *RegistrationPayoutMethod `json:"payout_method,omitempty"`
+	PayeeID               string                    `json:"payee_id"`
+	ClientSessionID       string                    `json:"client_session_id,omitempty"`
+	RedirectURL           string                    `json:"redirect_url,omitempty"`
+	RedirectTime          *int                      `json:"redirect_time,omitempty"`
+	PayoutMethods         []string                  `json:"payout_methods,omitempty"`
+	LockType              string                    `json:"lock_type,omitempty"`
+	PayeeDataMatchingType string                    `json:"payee_data_matching_type,omitempty"`
+	AlreadyHaveAnAccount  string                    `json:"already_have_an_account,omitempty"`
+	Payee                 *RegistrationPayee        `json:"payee,omitempty"`
+	LanguageID            string                    `json:"language_id,omitempty"`
+	PayoutMethod          *RegistrationPayoutMethod `json:"payout_method,omitempty"`
 }
 
 // RegistrationPayee describes the payee in a registration link request.
 type RegistrationPayee struct {
-	Type       string                     `json:"type,omitempty"`
-	Company    *RegistrationCompany       `json:"company,omitempty"`
-	Contact    *RegistrationContact       `json:"contact,omitempty"`
-	Address    *RegistrationAddress       `json:"address,omitempty"`
-	IDDocument *RegistrationIDDocument    `json:"id_document,omitempty"`
+	Type       string                  `json:"type,omitempty"`
+	Company    *RegistrationCompany    `json:"company,omitempty"`
+	Contact    *RegistrationContact    `json:"contact,omitempty"`
+	Address    *RegistrationAddress    `json:"address,omitempty"`
+	IDDocument *RegistrationIDDocument `json:"id_document,omitempty"`
 }
 
 // RegistrationContact holds the payee's contact information.
@@ -80,14 +80,14 @@ type RegistrationAddress struct {
 
 // RegistrationIDDocument holds identity document details.
 type RegistrationIDDocument struct {
-	Type                      string `json:"type,omitempty"`
-	Number                    string `json:"number,omitempty"`
-	IssueCountry              string `json:"issue_country,omitempty"`
-	NameOnID                  string `json:"name_on_id,omitempty"`
-	ExpirationDate            string `json:"expiration_date,omitempty"`
-	IssueDate                 string `json:"IssueDate,omitempty"`
-	FirstNameInLocalLanguage  string `json:"first_name_in_local_language,omitempty"`
-	LastNameInLocalLanguage   string `json:"last_name_in_local_language,omitempty"`
+	Type                     string `json:"type,omitempty"`
+	Number                   string `json:"number,omitempty"`
+	IssueCountry             string `json:"issue_country,omitempty"`
+	NameOnID                 string `json:"name_on_id,omitempty"`
+	ExpirationDate           string `json:"expiration_date,omitempty"`
+	IssueDate                string `json:"IssueDate,omitempty"`
+	FirstNameInLocalLanguage string `json:"first_name_in_local_language,omitempty"`
+	LastNameInLocalLanguage  string `json:"last_name_in_local_language,omitempty"`
 }
 
 // RegistrationPayoutMethod holds payout method details for bank pre-population.
@@ -110,7 +110,6 @@ type RegistrationLinkResult struct {
 	RegistrationLink string `json:"registration_link"`
 	Token            string `json:"token"`
 }
-
 
 // RegistrationOption defines functional options for registration links.
 type RegistrationOption func(*RegistrationLinkRequest)
@@ -272,4 +271,3 @@ func (s *PayeesService) GetStatus(ctx context.Context, payeeID string) (*PayeeSt
 
 	return &resp.Result, nil
 }
-
