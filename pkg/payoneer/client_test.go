@@ -52,9 +52,6 @@ func TestNewClient(t *testing.T) {
 
 	t.Run("Service initialization", func(t *testing.T) {
 		client := payoneer.NewClient()
-		if client.Accounts == nil {
-			t.Error("expected Accounts service to be initialized")
-		}
 		if client.Payouts == nil {
 			t.Error("expected Payouts service to be initialized")
 		}

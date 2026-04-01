@@ -57,10 +57,9 @@ type Client struct {
 	ProgramID string
 
 	// Services
-	common   service
-	Accounts *AccountsService
-	Payouts  *PayoutsService
-	Payees   *PayeesService
+	common  service
+	Payouts *PayoutsService
+	Payees  *PayeesService
 }
 
 // retryableLogger is a wrapper around slog.Logger that implements retryablehttp.LeveledLogger.
@@ -160,7 +159,6 @@ func NewClient(opts ...Option) *Client {
 	c.HTTPClient = c.wrapTransport(c.HTTPClient)
 
 	c.common.client = c
-	c.Accounts = (*AccountsService)(&c.common)
 	c.Payouts = (*PayoutsService)(&c.common)
 	c.Payees = (*PayeesService)(&c.common)
 
@@ -217,6 +215,12 @@ func (c *Client) NewRequest(ctx context.Context, method, path string, body any) 
 	req.Header.Set("User-Agent", "go-payoneer-sdk/1.0.0")
 
 	return req, nil
+}
+
+// apiResult is a generic envelope for Payoneer API responses that wrap
+// their payload under a "result" key.
+type apiResult[T any] struct {
+	Result T `json:"result"`
 }
 
 // Do executes an API request and parses the response into v.

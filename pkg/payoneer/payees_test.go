@@ -16,7 +16,7 @@ func TestPayeesService(t *testing.T) {
 	client := NewClient(WithBaseURL(server.URL))
 	client.ProgramID = "123"
 
-	t.Run("CreateRegistrationURL", func(t *testing.T) {
+	t.Run("CreateRegistrationLink", func(t *testing.T) {
 		mux.HandleFunc("/v4/programs/123/payees/registration-link", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
 				t.Errorf("got method %s, want POST", r.Method)
@@ -31,19 +31,30 @@ func TestPayeesService(t *testing.T) {
 				t.Errorf("got payee_id %s, want payee1", req.PayeeID)
 			}
 
+			if req.LanguageID != "en" {
+				t.Errorf("got language_id %s, want en", req.LanguageID)
+			}
+
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(RegistrationLinkResponse{
-				RegistrationLink: "https://payoneer.com/reg/123",
+			json.NewEncoder(w).Encode(apiResult[RegistrationLinkResult]{
+				Result: RegistrationLinkResult{
+					RegistrationLink: "https://payoneer.com/reg/123",
+					Token:            "abc-token",
+				},
 			})
 		})
 
-		link, err := client.Payees.CreateRegistrationURL(context.Background(), "payee1", WithLanguage("en"))
+		result, err := client.Payees.CreateRegistrationLink(context.Background(), "payee1", WithLanguage("en"))
 		if err != nil {
-			t.Fatalf("CreateRegistrationURL failed: %v", err)
+			t.Fatalf("CreateRegistrationLink failed: %v", err)
 		}
 
-		if link != "https://payoneer.com/reg/123" {
-			t.Errorf("got link %s, want https://payoneer.com/reg/123", link)
+		if result.RegistrationLink != "https://payoneer.com/reg/123" {
+			t.Errorf("got link %s, want https://payoneer.com/reg/123", result.RegistrationLink)
+		}
+
+		if result.Token != "abc-token" {
+			t.Errorf("got token %s, want abc-token", result.Token)
 		}
 	})
 
@@ -54,10 +65,13 @@ func TestPayeesService(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(PayeeStatus{
-				PayeeID:           "payee1",
-				StatusCode:        1,
-				StatusDescription: "ACTIVE",
+			json.NewEncoder(w).Encode(apiResult[PayeeStatus]{
+				Result: PayeeStatus{
+					AccountID:        "3676945",
+					Status:           PayeeStatusDetail{Type: 1, Description: "Active"},
+					RegistrationDate: "2021-05-05",
+					PayoutMethod:     &PayeePayoutMethod{Type: "BANK", Currency: "USD"},
+				},
 			})
 		})
 
@@ -66,29 +80,26 @@ func TestPayeesService(t *testing.T) {
 			t.Fatalf("GetStatus failed: %v", err)
 		}
 
-		if status.StatusCode != 1 {
-			t.Errorf("got status code %d, want 1", status.StatusCode)
+		if status.Status.Type != 1 {
+			t.Errorf("got status type %d, want 1", status.Status.Type)
+		}
+
+		if status.Status.Description != "Active" {
+			t.Errorf("got status description %s, want Active", status.Status.Description)
+		}
+
+		if status.AccountID != "3676945" {
+			t.Errorf("got account_id %s, want 3676945", status.AccountID)
+		}
+
+		if status.RegistrationDate != "2021-05-05" {
+			t.Errorf("got registration_date %s, want 2021-05-05", status.RegistrationDate)
+		}
+
+		if status.PayoutMethod == nil || status.PayoutMethod.Type != "BANK" {
+			t.Errorf("got payout_method %+v, want BANK/USD", status.PayoutMethod)
 		}
 	})
 
-	t.Run("Get", func(t *testing.T) {
-		mux.HandleFunc("/v4/programs/123/payees/payee1", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(Payee{
-				PayeeID:   "payee1",
-				FirstName: Some("John"),
-				LastName:  Some("Doe"),
-			})
-		})
-
-		payee, err := client.Payees.Get(context.Background(), "payee1")
-		if err != nil {
-			t.Fatalf("Get failed: %v", err)
-		}
-
-		firstName, _ := payee.FirstName.Get()
-		if firstName != "John" {
-			t.Errorf("got first name %s, want John", firstName)
-		}
-	})
 }
+

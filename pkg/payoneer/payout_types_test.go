@@ -31,7 +31,7 @@ func TestPayoutModels_Serialization(t *testing.T) {
 			t.Fatalf("failed to unmarshal actual JSON: %v", uerr)
 		}
 
-		expected := `{"payments":[{"client_reference_id":"ref123","amount":10.5,"payee_id":"payee456","currency":"USD","description":"Test Payment"}]}`
+		expected := `{"Payments":[{"client_reference_id":"ref123","amount":10.5,"payee_id":"payee456","currency":"USD","description":"Test Payment"}]}`
 		if uerr := json.Unmarshal([]byte(expected), &want); uerr != nil {
 			t.Fatalf("failed to unmarshal expected JSON: %v", uerr)
 		}
@@ -44,26 +44,30 @@ func TestPayoutModels_Serialization(t *testing.T) {
 		}
 	})
 
-	t.Run("PayoutBatchResult deserialization with Optional", func(t *testing.T) {
+	t.Run("PayoutStatusResult deserialization", func(t *testing.T) {
 		jsonData := `{
-			"batch_id": "batch789",
+			"payout_date": "2021-03-17T10:47:00-04:00",
+			"amount": 5.10,
+			"currency": "USD",
 			"status": "Pending",
-			"reason": "Processing",
-			"release_date": "2024-05-20T10:00:00Z"
+			"payee_id": "payee123",
+			"payout_id": "1636595702",
+			"reason_code": "5001",
+			"reason_description": "Processing"
 		}`
 
-		var result payoneer.PayoutBatchResult
+		var result payoneer.PayoutStatusResult
 		if err := json.Unmarshal([]byte(jsonData), &result); err != nil {
-			t.Fatalf("failed to unmarshal PayoutBatchResult: %v", err)
+			t.Fatalf("failed to unmarshal PayoutStatusResult: %v", err)
 		}
 
-		if result.BatchID != "batch789" {
-			t.Errorf("expected BatchID batch789, got %s", result.BatchID)
+		if result.Status != "Pending" {
+			t.Errorf("expected Status Pending, got %s", result.Status)
 		}
 
-		reason, ok := result.Reason.Get()
-		if !ok || reason != "Processing" {
-			t.Errorf("expected Reason Processing, got %s (ok: %v)", reason, ok)
+		reasonDesc, ok := result.ReasonDescription.Get()
+		if !ok || reasonDesc != "Processing" {
+			t.Errorf("expected ReasonDescription Processing, got %s (ok: %v)", reasonDesc, ok)
 		}
 	})
 }
@@ -83,6 +87,7 @@ func TestMassPayoutRequest_Validate(t *testing.T) {
 						Amount:            100,
 						PayeeID:           "payee1",
 						Currency:          "USD",
+						Description:       "test",
 					},
 				},
 			},
@@ -111,6 +116,7 @@ func TestMassPayoutRequest_Validate(t *testing.T) {
 						Amount:            100,
 						PayeeID:           "payee1",
 						Currency:          "USD",
+						Description:       "test",
 					},
 				},
 			},
@@ -125,6 +131,7 @@ func TestMassPayoutRequest_Validate(t *testing.T) {
 						Amount:            0,
 						PayeeID:           "payee1",
 						Currency:          "USD",
+						Description:       "test",
 					},
 				},
 			},
@@ -137,6 +144,21 @@ func TestMassPayoutRequest_Validate(t *testing.T) {
 					{
 						ClientReferenceID: "ref1",
 						Amount:            -10,
+						PayeeID:           "payee1",
+						Currency:          "USD",
+						Description:       "test",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing description",
+			req: payoneer.MassPayoutRequest{
+				Payments: []payoneer.PayoutItem{
+					{
+						ClientReferenceID: "ref1",
+						Amount:            100,
 						PayeeID:           "payee1",
 						Currency:          "USD",
 					},

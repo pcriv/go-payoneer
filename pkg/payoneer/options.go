@@ -2,10 +2,8 @@ package payoneer
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"time"
 
 	"go.opentelemetry.io/otel/metric"
@@ -137,37 +135,3 @@ func WithProgramID(id string) Option {
 	}
 }
 
-// WithPage sets the page number for pagination.
-func WithPage(page int) TransactionListOption {
-	return func(v *url.Values) {
-		v.Set("page", fmt.Sprintf("%d", page))
-	}
-}
-
-// WithPageSize sets the number of items per page.
-func WithPageSize(size int) TransactionListOption {
-	return func(v *url.Values) {
-		v.Set("page_size", fmt.Sprintf("%d", size))
-	}
-}
-
-// WithFrom sets the start date for filtering transactions.
-func WithFrom(from time.Time) TransactionListOption {
-	return func(v *url.Values) {
-		v.Set("from", from.Format(time.RFC3339))
-	}
-}
-
-// WithTo sets the end date for filtering transactions.
-func WithTo(to time.Time) TransactionListOption {
-	return func(v *url.Values) {
-		v.Set("to", to.Format(time.RFC3339))
-	}
-}
-
-// WithStatus sets the status for filtering transactions.
-func WithStatus(status string) TransactionListOption {
-	return func(v *url.Values) {
-		v.Set("status", status)
-	}
-}

@@ -12,8 +12,10 @@ type PayoutItem struct {
 	ClientReferenceID string `json:"client_reference_id"`
 	PayeeID           string `json:"payee_id"`
 	Amount            int64  `json:"-"` // Internal use in cents
-	Currency          string `json:"currency"`
-	Description       string `json:"description,omitempty"`
+	Currency          string `json:"currency,omitempty"`
+	Description       string `json:"description"`
+	PayoutDate        string `json:"payout_date,omitempty"`
+	GroupID           string `json:"group_id,omitempty"`
 }
 
 // MarshalJSON implements the json.Marshaler interface for PayoutItem.
@@ -48,7 +50,7 @@ func (p *PayoutItem) UnmarshalJSON(data []byte) error {
 
 // MassPayoutRequest contains a batch of payments to be processed.
 type MassPayoutRequest struct {
-	Payments []PayoutItem `json:"payments"`
+	Payments []PayoutItem `json:"Payments"`
 }
 
 // Validate ensures that the mass payout request is structurally valid.
@@ -66,24 +68,39 @@ func (r *MassPayoutRequest) Validate() error {
 		if p.Amount <= 0 {
 			return fmt.Errorf("payment %d: amount must be greater than zero", i)
 		}
+		if p.Description == "" {
+			return fmt.Errorf("payment %d: description is required", i)
+		}
 	}
 
 	return nil
 }
 
-// PayoutBatchResult represents the API response for mass payouts.
-type PayoutBatchResult struct {
-	BatchID     string           `json:"batch_id"`
-	Status      string           `json:"status"`
-	Reason      Optional[string] `json:"reason"`
-	ReleaseDate Optional[string] `json:"release_date"`
+// MassPayoutResult is the response from submitting a mass payout.
+// The API returns the result as a plain string (e.g. "Payments Created").
+type MassPayoutResult struct {
+	Result string `json:"result"`
 }
 
 // PayoutStatusResult represents the status of a single payout.
 type PayoutStatusResult struct {
-	PayoutID          string           `json:"payout_id"`
-	ClientReferenceID string           `json:"client_reference_id"`
-	Status            string           `json:"status"`
-	Reason            Optional[string] `json:"reason"`
-	ReleaseDate       Optional[string] `json:"release_date"`
+	PayoutDate             Optional[string]  `json:"payout_date"`
+	Amount                 Optional[float64] `json:"amount"`
+	Currency               Optional[string]  `json:"currency"`
+	Status                 string            `json:"status"`
+	TargetAmount           Optional[float64] `json:"target_amount"`
+	TargetCurrency         Optional[string]  `json:"target_currency"`
+	PayeeID                Optional[string]  `json:"payee_id"`
+	PayoutID               Optional[string]  `json:"payout_id"`
+	ScheduledPayoutDate    Optional[string]  `json:"scheduled_payout_date"`
+	LoadDate               Optional[string]  `json:"load_date"`
+	ReasonCode             Optional[string]  `json:"reason_code"`
+	ReasonDescription      Optional[string]  `json:"reason_description"`
+	CancelReasonCode       Optional[int]     `json:"cancel_reason_code"`
+	CancelReasonDescription Optional[string] `json:"cancel_reason_description"`
+}
+
+// CancelPayoutResult represents the response from cancelling a payout.
+type CancelPayoutResult struct {
+	Description string `json:"description"`
 }

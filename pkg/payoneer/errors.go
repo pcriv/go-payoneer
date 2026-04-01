@@ -9,10 +9,6 @@ import (
 var (
 	// ErrProgramIDRequired is returned when a service method requires ProgramID but it is not set.
 	ErrProgramIDRequired = errors.New("program_id is required")
-	// ErrAccountIDRequired is returned when accountID is empty.
-	ErrAccountIDRequired = errors.New("account_id is required")
-	// ErrTransactionIDRequired is returned when transactionID is empty.
-	ErrTransactionIDRequired = errors.New("transaction_id is required")
 	// ErrPayeeIDRequired is returned when payeeID is empty.
 	ErrPayeeIDRequired = errors.New("payee_id is required")
 	// ErrClientReferenceIDRequired is returned when clientReferenceID is empty.

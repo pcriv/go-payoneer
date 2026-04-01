@@ -55,34 +55,23 @@ if err != nil {
 
 ## Usage Examples
 
-### Account Balances
-
-```go
-balances, err := client.Accounts.ListBalances(ctx)
-if err != nil {
-    // Handle error (SDK provides custom APIError with status code mapping)
-}
-
-for _, balance := range balances {
-    fmt.Printf("%s: %d\n", balance.Currency, balance.Amount)
-}
-```
-
 ### Submit a Mass Payout
 
 ```go
 request := &payoneer.MassPayoutRequest{
-    ClientReferenceID: "unique-payout-ref-123", // Mandatory idempotency
-    Payouts: []payoneer.Payout{
+    Payments: []payoneer.PayoutItem{
         {
-            PayeeID:  "payee-456",
-            Amount:   15000, // $150.00 (in cents/minor units)
-            Currency: "USD",
+            ClientReferenceID: "unique-payout-ref-123",
+            PayeeID:           "payee-456",
+            Amount:            15000, // $150.00 (in cents, converted to 150.00 on the wire)
+            Currency:          "USD",
+            Description:       "March payout",
         },
     },
 }
 
-result, err := client.Payouts.Create(ctx, request)
+result, err := client.Payouts.CreateMassPayout(ctx, request)
+// result.Result — e.g. "Payments Created"
 ```
 
 ### Handle Webhooks (IPCN)
@@ -107,10 +96,12 @@ mux.Handle("/webhooks", payoneer.WebhookValidator(secret)(
 
 ```go
 // Generate a link for a new payee to register
-link, err := client.Payees.CreateRegistrationURL(ctx, "payee-789",
+result, err := client.Payees.CreateRegistrationLink(ctx, "payee-789",
     payoneer.WithRedirectURL("https://myapp.com/onboarded"),
     payoneer.WithLanguage("en"),
 )
+// result.RegistrationLink — the URL to redirect the payee to
+// result.Token           — unique token for this registration session
 ```
 
 ## Configuration

@@ -11,7 +11,8 @@ import (
 )
 
 // CreateMassPayout submits a batch of payout requests.
-func (s *PayoutsService) CreateMassPayout(ctx context.Context, req *MassPayoutRequest) (*PayoutBatchResult, error) {
+// On success the API returns HTTP 201 with {"result": "Payments Created"}.
+func (s *PayoutsService) CreateMassPayout(ctx context.Context, req *MassPayoutRequest) (*MassPayoutResult, error) {
 	if s.client.ProgramID == "" {
 		return nil, ErrProgramIDRequired
 	}
@@ -34,13 +35,13 @@ func (s *PayoutsService) CreateMassPayout(ctx context.Context, req *MassPayoutRe
 		return nil, err
 	}
 
-	var result PayoutBatchResult
-	err = s.client.Do(httpReq, &result)
+	var resp MassPayoutResult
+	err = s.client.Do(httpReq, &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return &result, nil
+	return &resp, nil
 }
 
 // GetPayoutStatus retrieves the status of a specific payout.
@@ -66,22 +67,22 @@ func (s *PayoutsService) GetPayoutStatus(ctx context.Context, clientReferenceID 
 		return nil, err
 	}
 
-	var result PayoutStatusResult
-	err = s.client.Do(httpReq, &result)
+	var resp apiResult[PayoutStatusResult]
+	err = s.client.Do(httpReq, &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return &result, nil
+	return &resp.Result, nil
 }
 
 // CancelPayout cancels a pending payout.
-func (s *PayoutsService) CancelPayout(ctx context.Context, clientReferenceID string) error {
+func (s *PayoutsService) CancelPayout(ctx context.Context, clientReferenceID string) (*CancelPayoutResult, error) {
 	if s.client.ProgramID == "" {
-		return ErrProgramIDRequired
+		return nil, ErrProgramIDRequired
 	}
 	if clientReferenceID == "" {
-		return ErrClientReferenceIDRequired
+		return nil, ErrClientReferenceIDRequired
 	}
 
 	path := fmt.Sprintf("/v4/programs/%s/payouts/%s/cancel", s.client.ProgramID, url.PathEscape(clientReferenceID))
@@ -93,12 +94,16 @@ func (s *PayoutsService) CancelPayout(ctx context.Context, clientReferenceID str
 		defer span.End()
 	}
 
-	httpReq, err := s.client.NewRequest(ctx, http.MethodPost, path, nil)
+	httpReq, err := s.client.NewRequest(ctx, http.MethodPut, path, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = s.client.Do(httpReq, nil)
+	var resp apiResult[CancelPayoutResult]
+	err = s.client.Do(httpReq, &resp)
+	if err != nil {
+		return nil, err
+	}
 
-	return err
+	return &resp.Result, nil
 }
