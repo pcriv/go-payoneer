@@ -1,6 +1,7 @@
 package payoneer
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,56 @@ import (
 	"testing"
 	"time"
 )
+
+func TestEventStructsMatchDocExamples(t *testing.T) {
+	t.Run("PaymentRequestAccepted", func(t *testing.T) {
+		body := `{"Payee Id": "testpayee123","IntPaymentId": "test payment ID 123"}`
+		var ev PaymentRequestAcceptedEvent
+		if err := json.Unmarshal([]byte(body), &ev); err != nil {
+			t.Fatal(err)
+		}
+		if ev.PayeeID != "testpayee123" || ev.IntPaymentID != "test payment ID 123" {
+			t.Errorf("got %+v", ev)
+		}
+	})
+
+	t.Run("CancelPayout", func(t *testing.T) {
+		body := `{"Payee Id":"test345","IntPaymentId":"v2_51d1fece","Reason Code":"10009","Reason Description":"Action+cannot+be+performed+because+payee+is+inactive","Payment Amount":"357.65","Canceled Payment Date":"2022-01-17T20%3a03%3a05Z"}`
+		var ev CancelPayoutEvent
+		if err := json.Unmarshal([]byte(body), &ev); err != nil {
+			t.Fatal(err)
+		}
+		if ev.PayeeID != "test345" || ev.IntPaymentID != "v2_51d1fece" ||
+			ev.ReasonCode != "10009" || ev.PaymentAmount != "357.65" ||
+			ev.CanceledPaymentDate != "2022-01-17T20%3a03%3a05Z" {
+			t.Errorf("got %+v", ev)
+		}
+	})
+
+	t.Run("PayeeApproved", func(t *testing.T) {
+		body := `{"Payee Id":"150002404758209","Payoneer Id":"1965321","Session Id":"976-150000409001425"}`
+		var ev PayeeApprovedEvent
+		if err := json.Unmarshal([]byte(body), &ev); err != nil {
+			t.Fatal(err)
+		}
+		if ev.PayeeID != "150002404758209" || ev.PayoneerID != "1965321" ||
+			ev.SessionID != "976-150000409001425" {
+			t.Errorf("got %+v", ev)
+		}
+	})
+
+	t.Run("PayeeDeclined", func(t *testing.T) {
+		body := `{"Payee Id":"7d26313074d0","Payoneer Id":"4791210","Session Id":"","Reason Description":"Incorrect information"}`
+		var ev PayeeDeclinedEvent
+		if err := json.Unmarshal([]byte(body), &ev); err != nil {
+			t.Fatal(err)
+		}
+		if ev.PayeeID != "7d26313074d0" || ev.PayoneerID != "4791210" ||
+			ev.ReasonDescription != "Incorrect information" {
+			t.Errorf("got %+v", ev)
+		}
+	})
+}
 
 const testSecret = "test-secret"
 
@@ -92,7 +143,7 @@ func TestVerifySignature(t *testing.T) {
 }
 
 func TestParseWebhook(t *testing.T) {
-	body := `{"event_type":"payout_created","event_id":"123","timestamp":"2023-01-01T00:00:00Z","content":{"status":"COMPLETED"}}`
+	body := `{"Payee Id":"test345","IntPaymentId":"v2_51d1fece","Reason Code":"10009","Reason Description":"inactive","Payment Amount":"357.65","Canceled Payment Date":"2026-04-14T06:41:51Z"}`
 	var ts int64 = 1700000000
 	cfg := WebhookConfig{
 		Secret:          testSecret,
@@ -103,12 +154,20 @@ func TestParseWebhook(t *testing.T) {
 	t.Run("valid webhook", func(t *testing.T) {
 		req := signedRequest(t, body, "n1", ts, AppNameSandbox)
 
-		event, err := ParseWebhook(req, cfg)
+		wh, err := ParseWebhook(req, cfg)
 		if err != nil {
 			t.Fatalf("ParseWebhook failed: %v", err)
 		}
-		if event.EventType != "payout_created" {
-			t.Errorf("got event type %s, want payout_created", event.EventType)
+
+		var ev CancelPayoutEvent
+		if derr := wh.Decode(&ev); derr != nil {
+			t.Fatalf("decode failed: %v", derr)
+		}
+		if ev.PayeeID != "test345" || ev.IntPaymentID != "v2_51d1fece" || ev.ReasonCode != "10009" {
+			t.Errorf("unexpected event: %+v", ev)
+		}
+		if wh.Auth.AppName != AppNameSandbox {
+			t.Errorf("got app name %q, want %q", wh.Auth.AppName, AppNameSandbox)
 		}
 	})
 
@@ -154,17 +213,22 @@ func TestParseWebhook(t *testing.T) {
 }
 
 func TestParseWebhookSignatureDisabled(t *testing.T) {
-	body := `{"event_type":"payout_created"}`
+	body := `{"Payee Id":"p1","IntPaymentId":"ip1"}`
 	cfg := WebhookConfig{DisableSignatureVerification: true}
 
 	t.Run("no Authorization header still accepted", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/webhooks", strings.NewReader(body))
-		event, err := ParseWebhook(req, cfg)
+		wh, err := ParseWebhook(req, cfg)
 		if err != nil {
 			t.Fatalf("ParseWebhook failed: %v", err)
 		}
-		if event.EventType != "payout_created" {
-			t.Errorf("got event type %s, want payout_created", event.EventType)
+
+		var ev PaymentRequestAcceptedEvent
+		if derr := wh.Decode(&ev); derr != nil {
+			t.Fatalf("decode failed: %v", derr)
+		}
+		if ev.PayeeID != "p1" || ev.IntPaymentID != "ip1" {
+			t.Errorf("unexpected event: %+v", ev)
 		}
 	})
 

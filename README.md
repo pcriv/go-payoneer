@@ -90,10 +90,25 @@ mux := http.NewServeMux()
 
 // Middleware parses `Authorization: hmacauth <AppName>:<Signature>:<Nonce>:<Timestamp>`,
 // verifies the HMAC-SHA256 over payload+nonce+timestamp, and restores the body.
-mux.Handle("/webhooks", payoneer.WebhookValidator(cfg)(
+// Each Payoneer webhook type is delivered to its own endpoint — the event
+// type is implied by the URL, not carried in the body. Unmarshal into the
+// struct that matches the endpoint: PaymentRequestAcceptedEvent,
+// CancelPayoutEvent, PayeeApprovedEvent, PayeeDeclinedEvent.
+mux.Handle("/webhooks/cancel-payout", payoneer.WebhookValidator(cfg)(
     http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        event, _ := payoneer.ParseWebhook(r, cfg)
-        fmt.Printf("Received %s for event ID %s\n", event.EventType, event.EventID)
+        wh, err := payoneer.ParseWebhook(r, cfg)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusUnauthorized)
+            return
+        }
+
+        var ev payoneer.CancelPayoutEvent
+        if err := wh.Decode(&ev); err != nil {
+            http.Error(w, err.Error(), http.StatusBadRequest)
+            return
+        }
+        fmt.Printf("Payout %s cancelled for payee %s: %s\n",
+            ev.IntPaymentID, ev.PayeeID, ev.ReasonDescription)
         w.WriteHeader(http.StatusOK)
     }),
 ))

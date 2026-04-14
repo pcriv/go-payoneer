@@ -15,12 +15,63 @@ import (
 	"time"
 )
 
-// WebhookEvent represents a Payoneer webhook notification (IPCN).
-type WebhookEvent struct {
-	EventType string          `json:"event_type"`
-	EventID   string          `json:"event_id"`
-	Timestamp string          `json:"timestamp"`
-	Content   json.RawMessage `json:"content"`
+// Webhook is the result of a verified Payoneer webhook request. Payoneer
+// webhooks do not carry a common envelope: the event type is implied by the
+// endpoint URL the notification was sent to, and the body contains only
+// event-specific fields. Callers should unmarshal Body into the typed event
+// struct that matches the endpoint (for example CancelPayoutEvent).
+type Webhook struct {
+	// Body is the raw JSON request body.
+	Body []byte
+	// Auth holds the parsed Authorization header; zero value when signature
+	// verification is disabled.
+	Auth AuthorizationParts
+}
+
+// Decode unmarshals the webhook body into v.
+func (w *Webhook) Decode(v any) error {
+	return json.Unmarshal(w.Body, v)
+}
+
+// PaymentRequestAcceptedEvent is the payload of the "Payment Request Accepted"
+// webhook — triggered when Payoneer registers a payment request.
+type PaymentRequestAcceptedEvent struct {
+	PayeeID      string `json:"Payee Id"`
+	IntPaymentID string `json:"IntPaymentId"`
+}
+
+// CancelPayoutEvent is the payload of the "Cancel Payout" webhook — triggered
+// after a payment is cancelled on Payoneer's platform.
+//
+// Note: Payoneer's published examples show PaymentAmount and
+// CanceledPaymentDate as strings, occasionally URL-percent-encoded
+// (e.g. "2022-01-17T20%3a03%3a05Z"); production payloads may arrive
+// unencoded. Callers that need typed values should URL-decode and parse after
+// unmarshalling.
+type CancelPayoutEvent struct {
+	PayeeID             string `json:"Payee Id"`
+	IntPaymentID        string `json:"IntPaymentId"`
+	ReasonCode          string `json:"Reason Code"`
+	ReasonDescription   string `json:"Reason Description"`
+	PaymentAmount       string `json:"Payment Amount"`
+	CanceledPaymentDate string `json:"Canceled Payment Date"`
+}
+
+// PayeeApprovedEvent is the payload of the "Approved" webhook — triggered
+// when Payoneer approves a payee application.
+type PayeeApprovedEvent struct {
+	PayeeID    string `json:"Payee Id"`
+	PayoneerID string `json:"Payoneer Id"`
+	SessionID  string `json:"Session Id"`
+}
+
+// PayeeDeclinedEvent is the payload of the "Declined" webhook — triggered
+// when Payoneer declines a payee application.
+type PayeeDeclinedEvent struct {
+	PayeeID           string `json:"Payee Id"`
+	PayoneerID        string `json:"Payoneer Id"`
+	SessionID         string `json:"Session Id"`
+	ReasonDescription string `json:"Reason Description"`
 }
 
 // Application-Name values Payoneer uses in the Authorization header.
@@ -187,33 +238,37 @@ func verifyRequest(body []byte, header string, cfg WebhookConfig) (Authorization
 	return parts, nil
 }
 
-// ParseWebhook verifies the Authorization header, reads the body, and
-// unmarshals the IPCN payload. When cfg.DisableSignatureVerification is true,
-// the Authorization header is not required and no cryptographic checks run.
-func ParseWebhook(r *http.Request, cfg WebhookConfig) (*WebhookEvent, error) {
+// ParseWebhook verifies the Authorization header and reads the body. The
+// returned Webhook exposes the raw JSON (to be decoded into an event struct
+// matching the endpoint) and the parsed Authorization parts. When
+// cfg.DisableSignatureVerification is true the Authorization header is not
+// required and no cryptographic checks run; Webhook.Auth is then zero.
+func ParseWebhook(r *http.Request, cfg WebhookConfig) (*Webhook, error) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, cfg.maxBody()))
 	if err != nil {
 		return nil, err
 	}
 	_ = r.Body.Close()
 
-	if !cfg.DisableSignatureVerification {
-		header := r.Header.Get("Authorization")
-		if header == "" {
-			return nil, errors.New("missing Authorization header")
-		}
+	wh := &Webhook{Body: body}
 
-		if _, verr := verifyRequest(body, header, cfg); verr != nil {
-			return nil, verr
-		}
+	if cfg.DisableSignatureVerification {
+		return wh, nil
 	}
 
-	var event WebhookEvent
-	if uerr := json.Unmarshal(body, &event); uerr != nil {
-		return nil, uerr
+	header := r.Header.Get("Authorization")
+	if header == "" {
+		return nil, errors.New("missing Authorization header")
 	}
 
-	return &event, nil
+	parts, verr := verifyRequest(body, header, cfg)
+	if verr != nil {
+		return nil, verr
+	}
+
+	wh.Auth = parts
+
+	return wh, nil
 }
 
 // WebhookValidator returns middleware that verifies the Payoneer Authorization
