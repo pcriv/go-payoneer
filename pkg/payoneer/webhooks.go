@@ -31,7 +31,7 @@ const (
 	authScheme       = "hmacauth"
 	defaultMaxSkew   = 5 * time.Minute
 	defaultMaxBody   = 1 << 20 // 1 MB
-	authHeaderFields = 4      // AppName, Signature, Nonce, Timestamp
+	authHeaderFields = 4       // AppName, Signature, Nonce, Timestamp
 )
 
 // NonceStore records seen webhook nonces for replay protection. Implementations
