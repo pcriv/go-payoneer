@@ -3,6 +3,7 @@ package payoneer
 import (
 	"bytes"
 	"crypto/hmac"
+	"crypto/md5" //nolint:gosec // required by Payoneer signature spec (body digest)
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -10,6 +11,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -114,6 +117,12 @@ type WebhookConfig struct {
 	NonceStore NonceStore
 	// MaxBodyBytes caps the accepted body size. Zero selects 1 MB.
 	MaxBodyBytes int64
+	// URLBuilder, if set, reconstructs the full URL that Payoneer signed
+	// against. When nil the default uses X-Forwarded-Proto (or r.TLS) for the
+	// scheme, X-Forwarded-Host (or r.Host) for the host, and r.URL.RequestURI()
+	// for path+query. Override when your deployment rewrites paths or uses a
+	// different proxy header scheme.
+	URLBuilder func(*http.Request) string
 	// Now overrides the clock for tests. Nil uses time.Now.
 	Now func() time.Time
 }
@@ -175,28 +184,78 @@ func ParseAuthorizationHeader(header string) (AuthorizationParts, error) {
 	return parts, nil
 }
 
-// ComputeSignature returns the base64 HMAC-SHA256 of payload||nonce||timestamp
-// keyed by secret, matching the Payoneer HMAC webhook specification.
-func ComputeSignature(payload []byte, nonce, timestamp, secret string) string {
+// ComputeSignature returns the base64 HMAC-SHA256 of the Payoneer signing
+// string for the given request. The algorithm is a direct port of the
+// canonical Java verifier Payoneer ships to integration partners
+// (HmacCalculator.java). The signing string is:
+//
+//	AppName + Method + EncodedURL + Timestamp + Nonce + BodyDigest
+//
+// where BodyDigest is "" for non-POST requests and base64(MD5(body)) otherwise,
+// and EncodedURL is the request URL normalized (lowercased, query parameters
+// sorted alphabetically), URL-encoded, then lowercased again.
+//
+// Note: the golden signatures embedded in the Java sample's unit tests do not
+// match the output of running that same sample. Until Payoneer clarifies,
+// real-world verification requires testing against a sandbox webhook. Cross-
+// implementation validation of each step (URL encoding, MD5, HMAC) is covered
+// separately in webhooks_test.go.
+func ComputeSignature(method, requestURL string, body []byte, appName, nonce, timestamp, secret string) string {
+	method = strings.ToUpper(method)
+
+	bodyDigest := ""
+	if method == http.MethodPost && body != nil {
+		sum := md5.Sum(body) //nolint:gosec // spec-mandated
+		bodyDigest = base64.StdEncoding.EncodeToString(sum[:])
+	}
+
+	encodedURL := strings.ToLower(payoneerURLEncode(normalizeURI(requestURL)))
+	toSign := appName + method + encodedURL + timestamp + nonce + bodyDigest
+
 	h := hmac.New(sha256.New, []byte(secret))
-	h.Write(payload)
-	h.Write([]byte(nonce))
-	h.Write([]byte(timestamp))
+	h.Write([]byte(toSign))
 
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
 // VerifySignature constant-time compares signature against the expected HMAC
-// for the given payload, nonce and timestamp.
-func VerifySignature(payload []byte, nonce, timestamp, signature, secret string) bool {
-	expected := ComputeSignature(payload, nonce, timestamp, secret)
+// for the given request components.
+func VerifySignature(method, requestURL string, body []byte, appName, nonce, timestamp, signature, secret string) bool {
+	expected := ComputeSignature(method, requestURL, body, appName, nonce, timestamp, secret)
 
 	return hmac.Equal([]byte(signature), []byte(expected))
 }
 
+// normalizeURI lowercases the URI and, when a query string is present, splits
+// its parameters on "&", sorts them alphabetically, and rejoins.
+func normalizeURI(raw string) string {
+	lower := strings.ToLower(raw)
+
+	path, query, hasQuery := strings.Cut(lower, "?")
+	if !hasQuery {
+		return lower
+	}
+
+	params := strings.Split(query, "&")
+	sort.Strings(params)
+
+	return path + "?" + strings.Join(params, "&")
+}
+
+// payoneerURLEncode mirrors Java 8 URLEncoder.encode(s, UTF-8): unreserved set
+// is A-Z, a-z, 0-9 and "-_.*"; space becomes "+". Go's url.QueryEscape follows
+// RFC 3986 (unreserved includes "~", encodes "*"), so we fix the two deltas:
+// Java encodes "~" to "%7E" and leaves "*" alone — url.QueryEscape already
+// emits "%2A" for "*" which matches the Java code's explicit post-processing.
+func payoneerURLEncode(s string) string {
+	e := url.QueryEscape(s)
+
+	return strings.ReplaceAll(e, "~", "%7E")
+}
+
 // verifyRequest performs full Authorization-header verification against cfg
 // and returns the parsed parts on success.
-func verifyRequest(body []byte, header string, cfg WebhookConfig) (AuthorizationParts, error) {
+func verifyRequest(method, requestURL string, body []byte, header string, cfg WebhookConfig) (AuthorizationParts, error) {
 	parts, err := ParseAuthorizationHeader(header)
 	if err != nil {
 		return parts, err
@@ -227,7 +286,7 @@ func verifyRequest(body []byte, header string, cfg WebhookConfig) (Authorization
 		}
 	}
 
-	if !VerifySignature(body, parts.Nonce, parts.Timestamp, parts.Signature, cfg.Secret) {
+	if !VerifySignature(method, requestURL, body, parts.AppName, parts.Nonce, parts.Timestamp, parts.Signature, cfg.Secret) {
 		return parts, errors.New("invalid signature")
 	}
 
@@ -236,6 +295,34 @@ func verifyRequest(body []byte, header string, cfg WebhookConfig) (Authorization
 	}
 
 	return parts, nil
+}
+
+// defaultURLBuilder reconstructs the URL Payoneer signed against from a
+// received request, preferring proxy headers when present.
+func defaultURLBuilder(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+
+	host := r.Host
+	if h := r.Header.Get("X-Forwarded-Host"); h != "" {
+		host = h
+	}
+
+	return scheme + "://" + host + r.URL.RequestURI()
+}
+
+func (c WebhookConfig) buildURL(r *http.Request) string {
+	if c.URLBuilder != nil {
+		return c.URLBuilder(r)
+	}
+
+	return defaultURLBuilder(r)
 }
 
 // ParseWebhook verifies the Authorization header and reads the body. The
@@ -261,7 +348,7 @@ func ParseWebhook(r *http.Request, cfg WebhookConfig) (*Webhook, error) {
 		return nil, errors.New("missing Authorization header")
 	}
 
-	parts, verr := verifyRequest(body, header, cfg)
+	parts, verr := verifyRequest(r.Method, cfg.buildURL(r), body, header, cfg)
 	if verr != nil {
 		return nil, verr
 	}
@@ -294,7 +381,7 @@ func WebhookValidator(cfg WebhookConfig) func(http.Handler) http.Handler {
 					return
 				}
 
-				if _, verr := verifyRequest(body, header, cfg); verr != nil {
+				if _, verr := verifyRequest(r.Method, cfg.buildURL(r), body, header, cfg); verr != nil {
 					http.Error(w, verr.Error(), http.StatusUnauthorized)
 
 					return

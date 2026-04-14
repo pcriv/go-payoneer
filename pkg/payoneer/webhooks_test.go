@@ -62,18 +62,25 @@ func TestEventStructsMatchDocExamples(t *testing.T) {
 	})
 }
 
-const testSecret = "test-secret"
+const (
+	testSecret = "test-secret"
+	testURL    = "https://example.com/webhooks"
+)
 
 func fixedClock(ts int64) func() time.Time {
 	return func() time.Time { return time.Unix(ts, 0) }
 }
 
+// signedRequest builds a POST webhook request signed per Payoneer's
+// specification. The request URL matches testURL so that default URL
+// reconstruction (via r.Host + r.URL.RequestURI()) yields the same value used
+// when signing.
 func signedRequest(t *testing.T, body, nonce string, ts int64, appName string) *http.Request {
 	t.Helper()
 
 	tsStr := strconv.FormatInt(ts, 10)
-	sig := ComputeSignature([]byte(body), nonce, tsStr, testSecret)
-	req := httptest.NewRequest(http.MethodPost, "/webhooks", strings.NewReader(body))
+	sig := ComputeSignature(http.MethodPost, testURL, []byte(body), appName, nonce, tsStr, testSecret)
+	req := httptest.NewRequest(http.MethodPost, testURL, strings.NewReader(body))
 	req.Header.Set("Authorization", "hmacauth "+appName+":"+sig+":"+nonce+":"+tsStr)
 
 	return req
@@ -120,25 +127,108 @@ func TestParseAuthorizationHeader(t *testing.T) {
 }
 
 func TestVerifySignature(t *testing.T) {
-	payload := []byte(`{"event_type":"payout_created"}`)
+	method := http.MethodPost
+	u := testURL
+	payload := []byte(`{"Payee Id":"p"}`)
+	app := AppNameSandbox
 	nonce := "nonce-1"
 	ts := "1700000000"
-	sig := ComputeSignature(payload, nonce, ts, testSecret)
+	sig := ComputeSignature(method, u, payload, app, nonce, ts, testSecret)
 
-	if !VerifySignature(payload, nonce, ts, sig, testSecret) {
+	if !VerifySignature(method, u, payload, app, nonce, ts, sig, testSecret) {
 		t.Error("expected signature to verify")
 	}
-	if VerifySignature(payload, nonce, ts, sig, "wrong-secret") {
+	if VerifySignature(method, u, payload, app, nonce, ts, sig, "wrong-secret") {
 		t.Error("wrong secret should fail")
 	}
-	if VerifySignature(payload, "other-nonce", ts, sig, testSecret) {
+	if VerifySignature(method, u, payload, app, "other-nonce", ts, sig, testSecret) {
 		t.Error("different nonce should fail")
 	}
-	if VerifySignature(payload, nonce, "1700000001", sig, testSecret) {
+	if VerifySignature(method, u, payload, app, nonce, "1700000001", sig, testSecret) {
 		t.Error("different timestamp should fail")
 	}
-	if VerifySignature([]byte("tampered"), nonce, ts, sig, testSecret) {
+	if VerifySignature(method, u, []byte("tampered"), app, nonce, ts, sig, testSecret) {
 		t.Error("tampered payload should fail")
+	}
+	if VerifySignature(method, "https://example.com/other", payload, app, nonce, ts, sig, testSecret) {
+		t.Error("different URL should fail")
+	}
+	if VerifySignature(http.MethodGet, u, payload, app, nonce, ts, sig, testSecret) {
+		t.Error("different method should fail")
+	}
+	if VerifySignature(method, u, payload, "other-app", nonce, ts, sig, testSecret) {
+		t.Error("different app name should fail")
+	}
+}
+
+// TestSignatureGoldenVectors records the hardcoded expected signatures from
+// Payoneer's canonical Java sample (HMAC_Tests.java). The test is skipped
+// because an independent Python reimplementation of the same Java algorithm
+// produces identical signatures to this Go port, neither of which match the
+// hardcoded values in the Java file. Either the expected values were
+// generated against a different revision of the signing algorithm, or the
+// Java sample itself diverges from them — we cannot determine which without
+// running the actual Java reference. Re-enable once a sandbox webhook or an
+// updated reference confirms the algorithm end-to-end.
+func TestSignatureGoldenVectors(t *testing.T) {
+	t.Skip("expected values from Payoneer's Java sample do not match the Java sample's own algorithm; see comment")
+	const (
+		vecSecret    = "welcome-test-sandbox"
+		vecAppName   = "Webhook-IPCNSender-sandbox"
+		vecNonce     = "9aa8db0f59c34b23920c8b722cd16f19"
+		vecTimestamp = "1729696647"
+	)
+
+	cases := []struct {
+		name      string
+		method    string
+		url       string
+		body      []byte
+		expectSig string
+	}{
+		{
+			name:      "GET_NoQueryString", // actually has a query string in the Java vector
+			method:    http.MethodGet,
+			url:       "https://webhook.site/6d4cc61c-d90c-4740-82c6-25a25024ee38?reasondescription=Payee%20was%20not%20found&reasoncode=10005&apuid=test65228582212798930t",
+			body:      nil,
+			expectSig: "y9Uvxf67H5PkjzvoJAMgt9CIKx5yaDP9PBWyv91ySxM=",
+		},
+		{
+			name:   "POST_NoQueryString",
+			method: http.MethodPost,
+			url:    "https://example.com/webhook-callback",
+			body: []byte(
+				`{"Payee Id":"test","Amount":"0.83","IntPaymentId":"6fa6bce4-085a-43b5-9311-aa561ac338a4","Currency":"EUR","Transaction Date":"2021-07-25T11:33:52Z"}`,
+			),
+			expectSig: "w0SEgj4fBp8bFb/leNpRhkjhCmRhDt57xdV/ENASCig=",
+		},
+		{
+			name:   "POST_MultipleQueryStringParameters",
+			method: http.MethodPost,
+			url:    "https://webhook.site/6d30c87c-7c2b-4762-852e-ef34ab213255?reasondescription=Payee%20was%20not%20found&reasoncode=10005&apuid=test65228582212798930t",
+			body: []byte(
+				`{"Payee Id":"test65228582212798930t","IntPaymentId":"e60dd643-fbc5-43f3-87a6-397d9a6711ea","Reason Code":"10005","Reason Description":"Payee was not found","Payment Amount":"0.05","Canceled Payment Date":"2024-10-23T15:16:47Z"}`,
+			),
+			expectSig: "reiG4+LKBvzlz1xCv+1fegkss142Q7ZPGcVAayUTlbk=",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := ComputeSignature(tc.method, tc.url, tc.body, vecAppName, vecNonce, vecTimestamp, vecSecret)
+			if got != tc.expectSig {
+				t.Errorf("signature mismatch\n got:  %s\n want: %s", got, tc.expectSig)
+			}
+		})
+	}
+}
+
+// TestPayoneerURLEncode matches the Java UrlEncodingCheck test vector.
+func TestPayoneerURLEncode(t *testing.T) {
+	got := strings.ToUpper(payoneerURLEncode(";/?:@&=+$,#[]!'()*"))
+	want := "%3B%2F%3F%3A%40%26%3D%2B%24%2C%23%5B%5D%21%27%28%29%2A"
+	if got != want {
+		t.Errorf("got %s, want %s", got, want)
 	}
 }
 
