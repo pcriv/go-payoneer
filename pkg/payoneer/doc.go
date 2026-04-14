@@ -7,7 +7,8 @@ and robust support for OAuth 2.0 authentication (Client Credentials and Authoriz
 Features:
   - Payee Management: Generate onboarding registration links and track payee status.
   - Financial Operations: Submit mass payouts with mandatory idempotency and validation.
-  - Webhooks (IPCN): Securely receive and validate HMAC SHA-256 signed notifications.
+  - Webhooks (IPCN): Verify the `Authorization: hmacauth` header, including HMAC-SHA256
+    signature, timestamp skew, and optional nonce-based replay protection.
   - Observability: Built-in support for slog structured logging and OpenTelemetry.
   - Robustness: Automatic retries with exponential backoff and 429 rate-limit handling.
 

@@ -79,13 +79,20 @@ result, err := client.Payouts.SubmitMany(ctx, request)
 Protect your webhook endpoint using the built-in middleware.
 
 ```go
-secret := "your-merchant-secret"
+cfg := payoneer.WebhookConfig{
+    Secret:          "your-shared-secret",
+    ExpectedAppName: payoneer.AppNameProduction, // or AppNameSandbox
+    // MaxClockSkew defaults to 5m; set to -1 to disable the timestamp check.
+    // NonceStore: yourStore, // optional replay protection
+}
+
 mux := http.NewServeMux()
 
-// Middleware validates HMAC signature and restores the body for the handler
-mux.Handle("/webhooks", payoneer.WebhookValidator(secret)(
+// Middleware parses `Authorization: hmacauth <AppName>:<Signature>:<Nonce>:<Timestamp>`,
+// verifies the HMAC-SHA256 over payload+nonce+timestamp, and restores the body.
+mux.Handle("/webhooks", payoneer.WebhookValidator(cfg)(
     http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        event, _ := payoneer.ParseWebhook(r, secret)
+        event, _ := payoneer.ParseWebhook(r, cfg)
         fmt.Printf("Received %s for event ID %s\n", event.EventType, event.EventID)
         w.WriteHeader(http.StatusOK)
     }),
