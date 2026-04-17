@@ -199,8 +199,8 @@ func TestClient_LazyAuthentication(t *testing.T) {
 	}
 
 	var result map[string]any
-	if err := client.Do(req, &result); err != nil {
-		t.Fatalf("Do() failed: %v", err)
+	if derr := client.Do(req, &result); derr != nil {
+		t.Fatalf("Do() failed: %v", derr)
 	}
 
 	if got := tokenHits.Load(); got != 1 {
@@ -231,6 +231,7 @@ func TestClient_ConcurrentAuthenticationOnce(t *testing.T) {
 			req, err := client.NewRequest(context.Background(), http.MethodGet, "/v4/accounts", nil)
 			if err != nil {
 				errs <- err
+
 				return
 			}
 			<-start
@@ -272,8 +273,8 @@ func TestClient_AuthRetryAfterFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest() failed: %v", err)
 	}
-	if err := client.Do(req, nil); err != nil {
-		t.Fatalf("Do() after failed auth should succeed: %v", err)
+	if derr := client.Do(req, nil); derr != nil {
+		t.Fatalf("Do() after failed auth should succeed: %v", derr)
 	}
 
 	if got := tokenHits.Load(); got != 1 {
