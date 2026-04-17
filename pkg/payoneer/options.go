@@ -26,17 +26,19 @@ func WithBaseURL(url string) Option {
 // WithHTTPClient sets the HTTP client to use for requests.
 func WithHTTPClient(client *http.Client) Option {
 	return func(c *Client) {
-		c.HTTPClient = client
+		c.httpClient.Store(client)
 	}
 }
 
 // WithTimeout sets the timeout for the default HTTP client.
 func WithTimeout(timeout time.Duration) Option {
 	return func(c *Client) {
-		if c.HTTPClient == nil {
-			c.HTTPClient = &http.Client{}
+		hc := c.httpClient.Load()
+		if hc == nil {
+			hc = &http.Client{}
 		}
-		c.HTTPClient.Timeout = timeout
+		hc.Timeout = timeout
+		c.httpClient.Store(hc)
 	}
 }
 

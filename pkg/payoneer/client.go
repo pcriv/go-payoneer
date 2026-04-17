@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -36,12 +38,18 @@ const (
 type Client struct {
 	BaseURL     string
 	AuthBaseURL string
-	HTTPClient  *http.Client
 	Logger      *slog.Logger
+
+	// httpClient is swapped atomically when Authenticate runs, so any number
+	// of goroutines can call HTTPClient() or Do concurrently without a race.
+	httpClient atomic.Pointer[http.Client]
 
 	tokenStore auth.TokenStore
 	authFn     func(ctx context.Context, c *Client) (*http.Client, error)
 	scopes     []string
+
+	authMu   sync.Mutex
+	authDone bool
 
 	// Retry configuration
 	retryMax     int
@@ -141,12 +149,10 @@ func NewClient(opts ...Option) *Client {
 	c := &Client{
 		BaseURL:     DefaultBaseURL,
 		AuthBaseURL: DefaultAuthBaseURL,
-		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
-		Logger:     slog.Default(),
-		tokenStore: auth.NewInMemoryStore(),
+		Logger:      slog.Default(),
+		tokenStore:  auth.NewInMemoryStore(),
 	}
+	c.httpClient.Store(&http.Client{Timeout: 30 * time.Second})
 
 	for _, opt := range opts {
 		opt(c)
@@ -156,7 +162,7 @@ func NewClient(opts ...Option) *Client {
 		c.tracer = c.tracerProvider.Tracer("go-payoneer")
 	}
 
-	c.HTTPClient = c.wrapTransport(c.HTTPClient)
+	c.httpClient.Store(c.wrapTransport(c.httpClient.Load()))
 
 	c.common.client = c
 	c.Payouts = (*PayoutsService)(&c.common)
@@ -165,10 +171,33 @@ func NewClient(opts ...Option) *Client {
 	return c
 }
 
-// Authenticate triggers the OAuth 2.0 authentication flow if configured.
-// It replaces the internal HTTP client with one that automatically handles token injection and refreshing.
+// HTTPClient returns the underlying *http.Client. The returned pointer may be
+// swapped by Authenticate, so callers should invoke this method each time
+// they need the current client rather than caching the pointer.
+func (c *Client) HTTPClient() *http.Client {
+	return c.httpClient.Load()
+}
+
+// Authenticate eagerly performs the configured OAuth 2.0 flow. Calling it is
+// optional: Do performs the same work lazily on the first request. Use this
+// when you want credential errors to surface at startup rather than on first
+// API call. Subsequent calls after a successful authentication are no-ops;
+// a failed attempt is not cached and the next call retries.
 func (c *Client) Authenticate(ctx context.Context) error {
+	return c.ensureAuthenticated(ctx)
+}
+
+// ensureAuthenticated runs authFn at most once successfully. Concurrent
+// callers block until the first attempt completes. If authFn fails, authDone
+// stays false so the next call retries.
+func (c *Client) ensureAuthenticated(ctx context.Context) error {
 	if c.authFn == nil {
+		return nil
+	}
+
+	c.authMu.Lock()
+	defer c.authMu.Unlock()
+	if c.authDone {
 		return nil
 	}
 
@@ -177,9 +206,9 @@ func (c *Client) Authenticate(ctx context.Context) error {
 		return fmt.Errorf("%w: %w", ErrAuthenticationFailed, err)
 	}
 
-	// Preserve timeout and wrap the new client's transport.
-	httpClient.Timeout = c.HTTPClient.Timeout
-	c.HTTPClient = c.wrapTransport(httpClient)
+	httpClient.Timeout = c.httpClient.Load().Timeout
+	c.httpClient.Store(c.wrapTransport(httpClient))
+	c.authDone = true
 
 	return nil
 }
@@ -225,9 +254,15 @@ type apiResult[T any] struct {
 
 // Do executes an API request and parses the response into v.
 // It automatically validates the response using transport-level validation.
+// If the client was configured with an OAuth flow and Authenticate has not
+// run successfully yet, Do authenticates lazily on first use.
 func (c *Client) Do(req *http.Request, v any) error {
+	if err := c.ensureAuthenticated(req.Context()); err != nil {
+		return err
+	}
+
 	// #nosec G704
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.httpClient.Load().Do(req)
 	if err != nil {
 		return err
 	}

@@ -23,7 +23,13 @@ Initialization:
 
 Authentication:
 
-	err := client.Authenticate(ctx)
+The client authenticates lazily on the first API call, so in typical usage
+no explicit step is required. Call Authenticate to surface credential errors
+at startup instead of on first request:
+
+	if err := client.Authenticate(ctx); err != nil {
+	    // credentials are wrong; fail fast
+	}
 
 For more details on specific services, refer to the corresponding service types:
   - PayeesService for registration links and status.

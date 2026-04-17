@@ -33,8 +33,8 @@ func TestNewClient(t *testing.T) {
 	t.Run("Custom Timeout", func(t *testing.T) {
 		timeout := 10 * time.Second
 		client := payoneer.NewClient(payoneer.WithTimeout(timeout))
-		if client.HTTPClient.Timeout != timeout {
-			t.Errorf("expected timeout to be %s, got %s", timeout, client.HTTPClient.Timeout)
+		if client.HTTPClient().Timeout != timeout {
+			t.Errorf("expected timeout to be %s, got %s", timeout, client.HTTPClient().Timeout)
 		}
 	})
 

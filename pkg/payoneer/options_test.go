@@ -19,8 +19,8 @@ func TestWithSandbox(t *testing.T) {
 func TestWithHTTPClient(t *testing.T) {
 	custom := &http.Client{Timeout: 5 * time.Second}
 	c := NewClient(WithHTTPClient(custom))
-	if c.HTTPClient.Timeout != 5*time.Second {
-		t.Errorf("got timeout %v, want 5s", c.HTTPClient.Timeout)
+	if c.HTTPClient().Timeout != 5*time.Second {
+		t.Errorf("got timeout %v, want 5s", c.HTTPClient().Timeout)
 	}
 }
 
