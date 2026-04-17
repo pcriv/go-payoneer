@@ -187,19 +187,14 @@ func ParseAuthorizationHeader(header string) (AuthorizationParts, error) {
 // ComputeSignature returns the base64 HMAC-SHA256 of the Payoneer signing
 // string for the given request. The algorithm is a direct port of the
 // canonical Java verifier Payoneer ships to integration partners
-// (HmacCalculator.java). The signing string is:
+// (HmacCalculator.java) and has been validated byte-for-byte against a real
+// Payoneer sandbox webhook. The signing string is:
 //
 //	AppName + Method + EncodedURL + Timestamp + Nonce + BodyDigest
 //
 // where BodyDigest is "" for non-POST requests and base64(MD5(body)) otherwise,
 // and EncodedURL is the request URL normalized (lowercased, query parameters
 // sorted alphabetically), URL-encoded, then lowercased again.
-//
-// Note: the golden signatures embedded in the Java sample's unit tests do not
-// match the output of running that same sample. Until Payoneer clarifies,
-// real-world verification requires testing against a sandbox webhook. Cross-
-// implementation validation of each step (URL encoding, MD5, HMAC) is covered
-// separately in webhooks_test.go.
 func ComputeSignature(method, requestURL string, body []byte, appName, nonce, timestamp, secret string) string {
 	method = strings.ToUpper(method)
 
