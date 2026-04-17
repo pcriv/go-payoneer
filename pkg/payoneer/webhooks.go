@@ -60,6 +60,18 @@ type CancelPayoutEvent struct {
 	CanceledPaymentDate string `json:"Canceled Payment Date"`
 }
 
+// PayoutSentToBankEvent is the payload of the "Sent to bank" webhook
+// (aka "Load Money to Bank / iACH") — triggered after Payoneer submits
+// instructions to transfer funds to a payee's local bank account.
+// See https://developer.payoneer.com/docs/mass-payouts-and-services.html#/db962d857712f-load-bank.
+type PayoutSentToBankEvent struct {
+	PayeeID         string `json:"Payee Id"`
+	Amount          string `json:"Amount"`
+	IntPaymentID    string `json:"IntPaymentId"`
+	Currency        string `json:"Currency"`
+	TransactionDate string `json:"Transaction Date"`
+}
+
 // PayeeApprovedEvent is the payload of the "Approved" webhook — triggered
 // when Payoneer approves a payee application.
 type PayeeApprovedEvent struct {

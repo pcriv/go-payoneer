@@ -60,6 +60,19 @@ func TestEventStructsMatchDocExamples(t *testing.T) {
 			t.Errorf("got %+v", ev)
 		}
 	})
+
+	t.Run("PayoutSentToBank", func(t *testing.T) {
+		body := `{"Payee Id":"testpayee123","Amount":"18.00","IntPaymentId":"test payment ID 123","Currency":"USD","Transaction Date":"2022-01-18T07:01:12Z"}`
+		var ev PayoutSentToBankEvent
+		if err := json.Unmarshal([]byte(body), &ev); err != nil {
+			t.Fatal(err)
+		}
+		if ev.PayeeID != "testpayee123" || ev.Amount != "18.00" ||
+			ev.IntPaymentID != "test payment ID 123" || ev.Currency != "USD" ||
+			ev.TransactionDate != "2022-01-18T07:01:12Z" {
+			t.Errorf("got %+v", ev)
+		}
+	})
 }
 
 const (
