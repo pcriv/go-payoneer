@@ -197,9 +197,7 @@ func ParseAuthorizationHeader(header string) (AuthorizationParts, error) {
 }
 
 // ComputeSignature returns the base64 HMAC-SHA256 of the Payoneer signing
-// string for the given request. The algorithm is a direct port of the
-// canonical Java verifier Payoneer ships to integration partners
-// (HmacCalculator.java) and has been validated byte-for-byte against a real
+// string for the given request, validated byte-for-byte against a real
 // Payoneer sandbox webhook. The signing string is:
 //
 //	AppName + Method + EncodedURL + Timestamp + Nonce + BodyDigest
@@ -249,11 +247,10 @@ func normalizeURI(raw string) string {
 	return path + "?" + strings.Join(params, "&")
 }
 
-// payoneerURLEncode mirrors Java 8 URLEncoder.encode(s, UTF-8): unreserved set
-// is A-Z, a-z, 0-9 and "-_.*"; space becomes "+". Go's url.QueryEscape follows
-// RFC 3986 (unreserved includes "~", encodes "*"), so we fix the two deltas:
-// Java encodes "~" to "%7E" and leaves "*" alone — url.QueryEscape already
-// emits "%2A" for "*" which matches the Java code's explicit post-processing.
+// payoneerURLEncode applies the encoding Payoneer uses inside the signing
+// string: unreserved set A-Z, a-z, 0-9 and "-_.*", space → "+". Go's
+// url.QueryEscape follows RFC 3986 (unreserved includes "~", encodes "*"),
+// so we emit "%7E" for "~"; url.QueryEscape already emits "%2A" for "*".
 func payoneerURLEncode(s string) string {
 	e := url.QueryEscape(s)
 

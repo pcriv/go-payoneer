@@ -174,7 +174,7 @@ func TestVerifySignature(t *testing.T) {
 	}
 }
 
-// TestPayoneerURLEncode matches the Java UrlEncodingCheck test vector.
+// TestPayoneerURLEncode pins percent-encoding of the reserved characters.
 func TestPayoneerURLEncode(t *testing.T) {
 	got := strings.ToUpper(payoneerURLEncode(";/?:@&=+$,#[]!'()*"))
 	want := "%3B%2F%3F%3A%40%26%3D%2B%24%2C%23%5B%5D%21%27%28%29%2A"
