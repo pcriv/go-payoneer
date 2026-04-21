@@ -72,6 +72,17 @@ type PayoutSentToBankEvent struct {
 	TransactionDate string `json:"Transaction Date"`
 }
 
+// AccountCardLoadedEvent is the payload of the "Account/Card Loaded
+// Confirmation" webhook — triggered when funds are loaded onto a payee's card.
+// See https://developer.payoneer.com/docs/mass-payouts-v4.html#/60655d18fabdd-account-card-loaded.
+type AccountCardLoadedEvent struct {
+	PayeeID         string `json:"Payee Id"`
+	Amount          string `json:"Amount"`
+	IntPaymentID    string `json:"IntPaymentId"`
+	Currency        string `json:"Currency"`
+	TransactionDate string `json:"Transaction Date"`
+}
+
 // PayeeApprovedEvent is the payload of the "Approved" webhook — triggered
 // when Payoneer approves a payee application.
 type PayeeApprovedEvent struct {
