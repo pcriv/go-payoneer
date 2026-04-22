@@ -83,17 +83,9 @@ func TestPayoutsService_GetStatus(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, "Transferred", result.Status)
 
-	payoutID, ok := result.PayoutID.Get()
-	assert.True(t, ok)
-	assert.Equal(t, "1636595702", payoutID)
-
-	amount, ok := result.Amount.Get()
-	assert.True(t, ok)
-	assert.InDelta(t, 5.10, amount, 0.001)
-
-	currency, ok := result.Currency.Get()
-	assert.True(t, ok)
-	assert.Equal(t, "USD", currency)
+	assert.Equal(t, "1636595702", result.PayoutID)
+	assert.InDelta(t, 5.10, result.Amount, 0.001)
+	assert.Equal(t, "USD", result.Currency)
 }
 
 func TestPayoutsService_GetStatus_Cancelled(t *testing.T) {
