@@ -1,0 +1,7 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod" # Required for Go modules
+    directory: "/"             # Path to your go.mod
+    schedule:
+      interval: "weekly"        # daily, weekly, or monthly
+    open-pull-requests-limit: 5
