@@ -25,7 +25,7 @@ func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	resp, err := t.Next.RoundTrip(req)
 	if err != nil {
-		t.Logger.Error("request failed",
+		t.Logger.ErrorContext(req.Context(), "request failed",
 			slog.String("method", req.Method),
 			slog.String("url", req.URL.String()),
 			slog.Duration("duration", time.Since(start)),

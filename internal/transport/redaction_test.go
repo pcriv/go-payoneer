@@ -16,9 +16,9 @@ func TestRedactionHandler(t *testing.T) {
 
 	t.Run("Redact Sensitive Header", func(t *testing.T) {
 		buf.Reset()
-		logger.Info("Request with Auth",
-			slog.String("Authorization", "Bearer sensitive-token"),
-			slog.String("User-Agent", "Go-SDK"),
+		logger.Info("request with Auth",
+			slog.String("authorization", "Bearer sensitive-token"),
+			slog.String("user_agent", "Go-SDK"),
 		)
 
 		output := buf.String()
@@ -35,7 +35,7 @@ func TestRedactionHandler(t *testing.T) {
 
 	t.Run("Redact Sensitive Body Fields", func(t *testing.T) {
 		buf.Reset()
-		logger.Info("Token Response",
+		logger.Info("token response",
 			slog.String("access_token", "token-123"),
 			slog.String("refresh_token", "refresh-456"),
 			slog.String("client_secret", "secret-789"),
@@ -54,7 +54,7 @@ func TestRedactionHandler(t *testing.T) {
 
 	t.Run("Case-insensitive Header Redaction", func(t *testing.T) {
 		buf.Reset()
-		logger.Info("Request with lower-case auth",
+		logger.Info("request with lower-case auth",
 			slog.String("authorization", "bearer-token"),
 		)
 
