@@ -3,3 +3,5 @@ firebase-debug.log
 .claude/
 docs/plans/
 .playwright-mcp/
+.agents/skills
+skills-lock.json
