@@ -3,7 +3,7 @@
 A high-quality, type-safe, and observable Go SDK for the Payoneer API.
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/pcriv/go-payoneer.svg)](https://pkg.go.dev/github.com/pcriv/go-payoneer)
-[![Go Report Card](https://goreportcard.com/badge/github.com/pcriv/go-payoneer)](https://goreportcard.com/report/github.com/pcriv/go-payoneer)
+[![CI](https://github.com/pcriv/go-payoneer/actions/workflows/ci.yml/badge.svg)](https://github.com/pcriv/go-payoneer/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/pcriv/go-payoneer/graph/badge.svg)](https://codecov.io/gh/pcriv/go-payoneer)
 
 ## Features
