@@ -55,7 +55,7 @@ func TestClient_LogRedaction(t *testing.T) {
 	if strings.Contains(logOutput, "secret_token_in_body") {
 		t.Errorf("Logs contain sensitive token from body: %s", logOutput)
 	}
-	if !strings.Contains(logOutput, "access_token=[REDACTED]") {
+	if !strings.Contains(logOutput, "access_token:[REDACTED]") {
 		t.Errorf("Logs do not contain redacted access_token body field: %s", logOutput)
 	}
 }
