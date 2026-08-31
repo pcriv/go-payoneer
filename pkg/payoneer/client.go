@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -45,12 +44,9 @@ type Client struct {
 	// of goroutines can call HTTPClient() or Do concurrently without a race.
 	httpClient atomic.Pointer[http.Client]
 
-	tokenStore auth.TokenStore
-	authFn     func(ctx context.Context, c *Client) (*http.Client, error)
-	scopes     []string
-
-	authMu   sync.Mutex
-	authDone bool
+	tokenStore   auth.TokenStore
+	authProvider auth.AuthProvider
+	scopes       []string
 
 	// Retry configuration
 	retryMax     int
@@ -92,9 +88,8 @@ func (r *retryableLogger) Warn(msg string, keysAndValues ...any) {
 	r.l.Warn(msg, keysAndValues...)
 }
 
-func (c *Client) wrapTransport(httpClient *http.Client) *http.Client {
+func (c *Client) wrapTransport(next http.RoundTripper) http.RoundTripper {
 	// 1. Base Transport (already in httpClient.Transport or DefaultTransport)
-	next := httpClient.Transport
 	if next == nil {
 		next = http.DefaultTransport
 	}
@@ -126,25 +121,20 @@ func (c *Client) wrapTransport(httpClient *http.Client) *http.Client {
 		}
 
 		retryClient.HTTPClient.Transport = next
-		retryClient.HTTPClient.Timeout = httpClient.Timeout
-
-		httpClient = retryClient.StandardClient()
-		next = httpClient.Transport
+		next = retryClient.StandardClient().Transport
 	}
 
 	// 4. Logging Transport
 	if c.Logger != nil {
-		httpClient.Transport = &transport.LoggingTransport{
+		next = &transport.LoggingTransport{
 			Next:            next,
 			Logger:          c.Logger,
 			RedactedHeaders: []string{"Authorization"},
 			RedactedFields:  []string{"client_secret", "access_token", "refresh_token", "client_id"},
 		}
-	} else {
-		httpClient.Transport = next
 	}
 
-	return httpClient
+	return next
 }
 
 // NewClient returns a new Payoneer Client with the provided options.
@@ -165,7 +155,26 @@ func NewClient(opts ...Option) *Client {
 		c.tracer = c.tracerProvider.Tracer("go-payoneer")
 	}
 
-	c.httpClient.Store(c.wrapTransport(c.httpClient.Load()))
+	baseTransport := c.wrapTransport(c.httpClient.Load().Transport)
+
+	baseClient := &http.Client{
+		Transport: baseTransport,
+		Timeout:   c.httpClient.Load().Timeout,
+	}
+
+	finalTransport := baseTransport
+	if c.authProvider != nil {
+		finalTransport = &auth.LazyAuthTransport{
+			Base:         baseTransport,
+			Provider:     c.authProvider,
+			ClientParams: baseClient,
+		}
+	}
+
+	c.httpClient.Store(&http.Client{
+		Transport: finalTransport,
+		Timeout:   c.httpClient.Load().Timeout,
+	})
 
 	c.common.client = c
 	c.Payouts = (*PayoutsService)(&c.common)
@@ -187,31 +196,12 @@ func (c *Client) HTTPClient() *http.Client {
 // API call. Subsequent calls after a successful authentication are no-ops;
 // a failed attempt is not cached and the next call retries.
 func (c *Client) Authenticate(ctx context.Context) error {
-	return c.ensureAuthenticated(ctx)
-}
-
-// ensureAuthenticated runs authFn at most once successfully. Concurrent
-// callers block until the first attempt completes. If authFn fails, authDone
-// stays false so the next call retries.
-func (c *Client) ensureAuthenticated(ctx context.Context) error {
-	if c.authFn == nil {
-		return nil
+	client := c.httpClient.Load()
+	if authTrans, ok := client.Transport.(*auth.LazyAuthTransport); ok {
+		if err := authTrans.Initialize(ctx); err != nil {
+			return fmt.Errorf("%w: %w", ErrAuthenticationFailed, err)
+		}
 	}
-
-	c.authMu.Lock()
-	defer c.authMu.Unlock()
-	if c.authDone {
-		return nil
-	}
-
-	httpClient, err := c.authFn(ctx, c)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrAuthenticationFailed, err)
-	}
-
-	httpClient.Timeout = c.httpClient.Load().Timeout
-	c.httpClient.Store(c.wrapTransport(httpClient))
-	c.authDone = true
 
 	return nil
 }
@@ -260,10 +250,6 @@ type apiResult[T any] struct {
 // If the client was configured with an OAuth flow and Authenticate has not
 // run successfully yet, Do authenticates lazily on first use.
 func (c *Client) Do(req *http.Request, v any) error {
-	if err := c.ensureAuthenticated(req.Context()); err != nil {
-		return err
-	}
-
 	// #nosec G704
 	resp, err := c.httpClient.Load().Do(req)
 	if err != nil {

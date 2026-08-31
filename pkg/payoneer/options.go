@@ -1,7 +1,6 @@
 package payoneer
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"time"
@@ -103,18 +102,14 @@ func WithScopes(scopes ...string) Option {
 // WithClientCredentials configures the client to use OAuth 2.0 Client Credentials flow.
 func WithClientCredentials(clientID, clientSecret string) Option {
 	return func(c *Client) {
-		c.authFn = func(ctx context.Context, c *Client) (*http.Client, error) {
-			return auth.NewClientCredentialsClient(ctx, c.AuthBaseURL, clientID, clientSecret, c.scopes, c.tokenStore)
-		}
+		c.authProvider = auth.NewClientCredentialsProvider(c.AuthBaseURL, clientID, clientSecret, c.scopes, c.tokenStore)
 	}
 }
 
 // WithAuthCode configures the client to use OAuth 2.0 Authorization Code flow.
 func WithAuthCode(clientID, clientSecret, code, redirectURL string) Option {
 	return func(c *Client) {
-		c.authFn = func(ctx context.Context, c *Client) (*http.Client, error) {
-			return auth.NewAuthCodeClient(ctx, c.AuthBaseURL, clientID, clientSecret, code, redirectURL, c.scopes, c.tokenStore)
-		}
+		c.authProvider = auth.NewAuthCodeProvider(c.AuthBaseURL, clientID, clientSecret, code, redirectURL, c.scopes, c.tokenStore)
 	}
 }
 

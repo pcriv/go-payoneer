@@ -17,80 +17,95 @@ func Endpoints(baseURL string) oauth2.Endpoint {
 	}
 }
 
-// NewClientCredentialsClient returns an http.Client authenticated via Client Credentials flow.
-// It eagerly fetches an initial token to validate the credentials.
-func NewClientCredentialsClient(
-	ctx context.Context,
+// AuthProvider initializes and returns an authenticated RoundTripper.
+type AuthProvider func(ctx context.Context, baseClient *http.Client) (http.RoundTripper, error)
+
+// NewClientCredentialsProvider returns an AuthProvider for the Client Credentials flow.
+func NewClientCredentialsProvider(
 	baseURL, clientID, clientSecret string,
 	scopes []string,
 	store TokenStore,
-) (*http.Client, error) {
-	config := &clientcredentials.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		TokenURL:     Endpoints(baseURL).TokenURL,
-		Scopes:       scopes,
-	}
+) AuthProvider {
+	return func(ctx context.Context, baseClient *http.Client) (http.RoundTripper, error) {
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, baseClient)
 
-	ts := config.TokenSource(ctx)
-
-	token, err := ts.Token()
-	if err != nil {
-		return nil, fmt.Errorf("failed to obtain token from %s: %w", config.TokenURL, err)
-	}
-
-	if store != nil {
-		store.Set(token)
-		ts = &storedTokenSource{
-			inner: ts,
-			store: store,
+		config := &clientcredentials.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			TokenURL:     Endpoints(baseURL).TokenURL,
+			Scopes:       scopes,
 		}
-	}
 
-	return oauth2.NewClient(ctx, ts), nil
+		ts := config.TokenSource(ctx)
+
+		// Eagerly fetch initial token to validate credentials
+		token, err := ts.Token()
+		if err != nil {
+			return nil, fmt.Errorf("failed to obtain token from %s: %w", config.TokenURL, err)
+		}
+
+		if store != nil {
+			store.Set(token)
+			ts = &storedTokenSource{
+				inner: ts,
+				store: store,
+			}
+		}
+
+		return &oauth2.Transport{
+			Source: ts,
+			Base:   baseClient.Transport,
+		}, nil
+	}
 }
 
-// NewAuthCodeClient returns an http.Client authenticated via Authorization Code flow.
-func NewAuthCodeClient(
-	ctx context.Context,
+// NewAuthCodeProvider returns an AuthProvider for the Authorization Code flow.
+func NewAuthCodeProvider(
 	baseURL, clientID, clientSecret, code, redirectURL string,
 	scopes []string,
 	store TokenStore,
-) (*http.Client, error) {
-	config := &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		Endpoint:     Endpoints(baseURL),
-		RedirectURL:  redirectURL,
-		Scopes:       scopes,
-	}
+) AuthProvider {
+	return func(ctx context.Context, baseClient *http.Client) (http.RoundTripper, error) {
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, baseClient)
 
-	var token *oauth2.Token
-	var err error
-
-	if store != nil {
-		token = store.Get()
-	}
-
-	if token == nil {
-		token, err = config.Exchange(ctx, code)
-		if err != nil {
-			return nil, err
+		config := &oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			Endpoint:     Endpoints(baseURL),
+			RedirectURL:  redirectURL,
+			Scopes:       scopes,
 		}
+
+		var token *oauth2.Token
+		var err error
+
 		if store != nil {
-			store.Set(token)
+			token = store.Get()
 		}
-	}
 
-	ts := config.TokenSource(ctx, token)
-	if store != nil {
-		ts = &storedTokenSource{
-			inner: ts,
-			store: store,
+		if token == nil {
+			token, err = config.Exchange(ctx, code)
+			if err != nil {
+				return nil, err
+			}
+			if store != nil {
+				store.Set(token)
+			}
 		}
-	}
 
-	return oauth2.NewClient(ctx, ts), nil
+		ts := config.TokenSource(ctx, token)
+		if store != nil {
+			ts = &storedTokenSource{
+				inner: ts,
+				store: store,
+			}
+		}
+
+		return &oauth2.Transport{
+			Source: ts,
+			Base:   baseClient.Transport,
+		}, nil
+	}
 }
 
 type storedTokenSource struct {
@@ -99,16 +114,10 @@ type storedTokenSource struct {
 }
 
 func (s *storedTokenSource) Token() (*oauth2.Token, error) {
-	// If store has a valid token, we could return it, but oauth2.ReuseTokenSource
-	// is usually better. However, our goal is to keep the store updated.
-
 	t, err := s.inner.Token()
 	if err != nil {
 		return nil, err
 	}
-
-	// We store the token every time it's retrieved from the inner source.
-	// x/oauth2's TokenSource returned by config.TokenSource will refresh it.
 	s.store.Set(t)
 
 	return t, nil
