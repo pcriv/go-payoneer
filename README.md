@@ -10,7 +10,7 @@ A high-quality, type-safe, and observable Go SDK for the Payoneer API.
 
 - **Full Service Coverage**: Accounts, Payouts, Webhooks, and Payee Management.
 - **Robust Authentication**: Secure OAuth 2.0 with eager credential validation and automatic token refreshing.
-- **Observability**: First-class support for `slog` structured logging and OpenTelemetry (Tracing/Metrics).
+- **Observability**: First-class support for `slog` structured logging and OpenTelemetry (Tracing/Metrics), including native tracing for background token refreshes.
 - **Resiliency**: Built-in exponential backoff retries and rate-limit handling (429s).
 - **Type-Safety**: Clean Go structs for all API resources, using generics for optional/nullable fields.
 - **Secure Webhooks**: Mandatory HMAC SHA-256 signature validation with an easy-to-use middleware.
