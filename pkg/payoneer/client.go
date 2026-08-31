@@ -135,8 +135,10 @@ func (c *Client) wrapTransport(httpClient *http.Client) *http.Client {
 	// 4. Logging Transport
 	if c.Logger != nil {
 		httpClient.Transport = &transport.LoggingTransport{
-			Next:   next,
-			Logger: c.Logger,
+			Next:            next,
+			Logger:          c.Logger,
+			RedactedHeaders: []string{"Authorization"},
+			RedactedFields:  []string{"client_secret", "access_token", "refresh_token", "client_id"},
 		}
 	} else {
 		httpClient.Transport = next

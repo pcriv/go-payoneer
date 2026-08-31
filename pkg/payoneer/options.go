@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/pcriv/go-payoneer/internal/auth"
-	"github.com/pcriv/go-payoneer/internal/transport"
 )
 
 // Option is a functional option for configuring the Client.
@@ -42,15 +41,11 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-// WithLogger sets the logger for the Client and wraps it with a RedactionHandler.
+// WithLogger sets the logger for the Client.
+// The internal HTTP transport handles redaction of sensitive headers and fields automatically before logging.
 func WithLogger(logger *slog.Logger) Option {
 	return func(c *Client) {
-		redactor := transport.NewRedactionHandler(
-			logger.Handler(),
-			[]string{"Authorization"},
-			[]string{"client_secret", "access_token", "refresh_token", "client_id"},
-		)
-		c.Logger = slog.New(redactor)
+		c.Logger = logger
 	}
 }
 

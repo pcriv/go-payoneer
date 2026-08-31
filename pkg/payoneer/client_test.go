@@ -44,10 +44,6 @@ func TestNewClient(t *testing.T) {
 		if client.Logger == nil {
 			t.Fatal("expected logger to be non-nil")
 		}
-		// The logger should be wrapped in a RedactionHandler
-		if client.Logger == logger {
-			t.Error("expected logger to be wrapped with RedactionHandler, not the original")
-		}
 	})
 
 	t.Run("Service initialization", func(t *testing.T) {
