@@ -16,6 +16,7 @@ import (
 
 	"github.com/hashicorp/go-retryablehttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
@@ -279,4 +280,68 @@ func (c *Client) Do(req *http.Request, v any) error {
 	}
 
 	return nil
+}
+
+// EndpointDef defines a declarative API endpoint.
+type EndpointDef struct {
+	Method   string
+	Path     string // e.g. "/v4/programs/{programID}/masspayouts"
+	SpanName string // e.g. "payoneer.payout.create_mass_payout"
+}
+
+type executeOptions struct {
+	pathArgs  map[string]string
+	spanAttrs []attribute.KeyValue
+}
+
+// ExecuteOption configures a call to execute.
+type ExecuteOption func(*executeOptions)
+
+// WithPathArg provides a value for a URL path placeholder (e.g. {clientReferenceID}).
+func WithPathArg(key, value string) ExecuteOption {
+	return func(o *executeOptions) {
+		if o.pathArgs == nil {
+			o.pathArgs = make(map[string]string)
+		}
+		o.pathArgs[key] = url.PathEscape(value)
+	}
+}
+
+// WithSpanAttr adds an OpenTelemetry attribute to the endpoint's span.
+func WithSpanAttr(attr attribute.KeyValue) ExecuteOption {
+	return func(o *executeOptions) {
+		o.spanAttrs = append(o.spanAttrs, attr)
+	}
+}
+
+func (c *Client) execute(ctx context.Context, def EndpointDef, reqBody any, respBody any, opts ...ExecuteOption) error {
+	if c.ProgramID == "" {
+		return ErrProgramIDRequired
+	}
+
+	options := executeOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	// Format path
+	path := def.Path
+	path = strings.ReplaceAll(path, "{programID}", url.PathEscape(c.ProgramID))
+	for k, v := range options.pathArgs {
+		path = strings.ReplaceAll(path, "{"+k+"}", v)
+	}
+
+	// Trace
+	if c.tracer != nil && def.SpanName != "" {
+		var span trace.Span
+		ctx, span = c.tracer.Start(ctx, def.SpanName, trace.WithAttributes(options.spanAttrs...))
+		defer span.End()
+	}
+
+	httpReq, err := c.NewRequest(ctx, def.Method, path, reqBody)
+	if err != nil {
+		return err
+	}
+
+	return c.Do(httpReq, respBody)
 }

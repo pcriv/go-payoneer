@@ -2,41 +2,40 @@ package payoneer
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"net/url"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
+)
+
+var (
+	SubmitMassPayoutsEndpoint = EndpointDef{
+		Method:   http.MethodPost,
+		Path:     "/v4/programs/{programID}/masspayouts",
+		SpanName: "payoneer.payout.create_mass_payout",
+	}
+	GetPayoutStatusEndpoint = EndpointDef{
+		Method:   http.MethodGet,
+		Path:     "/v4/programs/{programID}/payouts/{clientReferenceID}/status",
+		SpanName: "payoneer.payout.get_status",
+	}
+	CancelPayoutEndpoint = EndpointDef{
+		Method:   http.MethodPut,
+		Path:     "/v4/programs/{programID}/payouts/{clientReferenceID}/cancel",
+		SpanName: "payoneer.payout.cancel",
+	}
 )
 
 // SubmitMany submits a batch of payout requests.
 // On success the API returns HTTP 201 with {"result": "Payments Created"}.
 func (s *PayoutsService) SubmitMany(ctx context.Context, req *MassPayoutRequest) (*MassPayoutResult, error) {
-	if s.client.ProgramID == "" {
-		return nil, ErrProgramIDRequired
-	}
-
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf("/v4/programs/%s/masspayouts", s.client.ProgramID)
-
-	if s.client.tracer != nil {
-		var span trace.Span
-		ctx, span = s.client.tracer.Start(ctx, "payoneer.payout.create_mass_payout",
-			trace.WithAttributes(attribute.Int("payment_count", len(req.Payments))))
-		defer span.End()
-	}
-
-	httpReq, err := s.client.NewRequest(ctx, http.MethodPost, path, req)
-	if err != nil {
-		return nil, err
-	}
-
 	var resp MassPayoutResult
-	err = s.client.Do(httpReq, &resp)
+	err := s.client.execute(ctx, SubmitMassPayoutsEndpoint, req, &resp,
+		WithSpanAttr(attribute.Int("payment_count", len(req.Payments))),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -46,29 +45,15 @@ func (s *PayoutsService) SubmitMany(ctx context.Context, req *MassPayoutRequest)
 
 // GetStatus retrieves the status of a specific payout.
 func (s *PayoutsService) GetStatus(ctx context.Context, clientReferenceID string) (*PayoutStatusResult, error) {
-	if s.client.ProgramID == "" {
-		return nil, ErrProgramIDRequired
-	}
 	if clientReferenceID == "" {
 		return nil, ErrClientReferenceIDRequired
 	}
 
-	path := fmt.Sprintf("/v4/programs/%s/payouts/%s/status", s.client.ProgramID, url.PathEscape(clientReferenceID))
-
-	if s.client.tracer != nil {
-		var span trace.Span
-		ctx, span = s.client.tracer.Start(ctx, "payoneer.payout.get_status",
-			trace.WithAttributes(attribute.String("client_reference_id", clientReferenceID)))
-		defer span.End()
-	}
-
-	httpReq, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	var resp apiResult[PayoutStatusResult]
-	err = s.client.Do(httpReq, &resp)
+	err := s.client.execute(ctx, GetPayoutStatusEndpoint, nil, &resp,
+		WithPathArg("clientReferenceID", clientReferenceID),
+		WithSpanAttr(attribute.String("client_reference_id", clientReferenceID)),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -78,29 +63,15 @@ func (s *PayoutsService) GetStatus(ctx context.Context, clientReferenceID string
 
 // Cancel cancels a pending payout.
 func (s *PayoutsService) Cancel(ctx context.Context, clientReferenceID string) (*CancelResult, error) {
-	if s.client.ProgramID == "" {
-		return nil, ErrProgramIDRequired
-	}
 	if clientReferenceID == "" {
 		return nil, ErrClientReferenceIDRequired
 	}
 
-	path := fmt.Sprintf("/v4/programs/%s/payouts/%s/cancel", s.client.ProgramID, url.PathEscape(clientReferenceID))
-
-	if s.client.tracer != nil {
-		var span trace.Span
-		ctx, span = s.client.tracer.Start(ctx, "payoneer.payout.cancel",
-			trace.WithAttributes(attribute.String("client_reference_id", clientReferenceID)))
-		defer span.End()
-	}
-
-	httpReq, err := s.client.NewRequest(ctx, http.MethodPut, path, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	var resp apiResult[CancelResult]
-	err = s.client.Do(httpReq, &resp)
+	err := s.client.execute(ctx, CancelPayoutEndpoint, nil, &resp,
+		WithPathArg("clientReferenceID", clientReferenceID),
+		WithSpanAttr(attribute.String("client_reference_id", clientReferenceID)),
+	)
 	if err != nil {
 		return nil, err
 	}
